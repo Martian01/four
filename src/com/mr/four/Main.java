@@ -38,32 +38,40 @@ public class Main {
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME
 	};
 
-	private static final int[] TOP = new int[] { 0, 0, 0, 0, 0, 0, 0 };
+	private static final byte[] TOP = new byte[] { 0, 0, 0, 0, 0, 0, 0 };
 
 	private static final byte ROWS = 7;
 	private static final byte COLUMNS = 7;
 
-	private static int index(int row, int column) {
+	private static int index(byte row, byte column) {
 		return (COLUMNS + 3) * (row + 3) + column;
 	}
 
 	private static byte[] board = new byte[BOARD.length];
 
-	private static int[] top = new int[TOP.length];
+	private static byte[] top = new byte[TOP.length];
 
-	private static void drop(int column, byte color) {
+	private static void drop(byte column, byte color) {
 		board[index(top[column]++, column)] = color;
 	}
 
-	private static boolean isOption(int column) {
+	private static void revert(byte column) {
+		board[index(--top[column], column)] = SPACE;
+	}
+
+	private static boolean isOption(byte column) {
 		return column >= 0 && column < COLUMNS && top[column] < ROWS;
 	}
 
-	private static List<Integer> getOptions() throws Exception {
-		ArrayList<Integer> options = new ArrayList<>(COLUMNS);
-		for (int c = 0; c < COLUMNS; c++)
+	private static final byte[] COLUMN_SEQUENCE = new byte[] { 3, 2, 4, 1, 5, 0, 6 };
+
+	private static List<Byte> getOptions() throws Exception {
+		ArrayList<Byte> options = new ArrayList<>(COLUMNS);
+		for (byte i = 0; i < COLUMNS; i++) {
+			byte c = COLUMN_SEQUENCE[i];
 			if (top[c] < ROWS)
 				options.add(c);
+		}
 		if (options.isEmpty())
 			throw new Exception();
 		return options;
@@ -87,7 +95,7 @@ public class Main {
 		do {
 			printBoard();
 			printValue();
-			int column = player == WHITE ? strategyUser(player) : strategyRandom(player);
+			byte column = player == WHITE ? strategyRandom(player) : strategySearch(player);
 			drop(column, player);
 			winner = winner(column);
 			player = (byte) (3 - player);
@@ -102,31 +110,35 @@ public class Main {
 		}
 	}
 
-	private static int strategyUser(byte color) {
+	private static byte strategyUser(byte color) {
 		for (;;) {
-			int column = getUserInput(color);
+			byte column = getUserInput(color);
 			if (isOption(column))
 				return column;
 			System.out.println("Illegal move. Try again.");
 		}
 	}
 
-	private static int strategyRandom(byte color) throws Exception {
-		List<Integer> options = getOptions();
-		return options.get((int) (Math.random() * options.size()));
+	private static byte strategyRandom(byte color) throws Exception {
+		List<Byte> options = getOptions();
+		double r = Math.random();
+		return options.get((int) (r * r * options.size()));
 	}
 
-	private static int strategySearch(byte color) throws Exception {
-		return color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE) : black(Integer.MIN_VALUE, Integer.MAX_VALUE);
+	private static final byte MAXLEVEL = 1; // must be greater then 0
+
+	private static byte strategySearch(byte color) throws Exception {
+		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL);
+		return (byte) (result >> 28);
 	}
 
 	// User Interaction
 
 	private static void printBoard() {
 		System.out.println("\n  1 2 3 4 5 6 7   ");
-		for (int r = ROWS - 1; r >= 0; r--) {
+		for (byte r = ROWS - 1; r >= 0; r--) {
 			StringBuilder line = new StringBuilder();
-			int base = index(r, -1);
+			int base = index(r, (byte) -1);
 			for (int c = -1; c <= COLUMNS; c++) {
 				switch (board[base++]) {
 					case SPACE: line.append("  "); break;
@@ -144,90 +156,90 @@ public class Main {
 		System.out.println("\nValue: " + value() + "\n");
 	}
 
-	private static int getUserInput(byte color) {
+	private static byte getUserInput(byte color) {
 		System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
-		return in.nextInt() - 1;
+		return (byte) (in.nextByte() - 1);
 	}
 
 	// Valuation, specific to a 7x7 board
 
-	private static final int[] UL0 = new int[] { 0, 9, 18, 27 };
-	private static final int[] UL1 = new int[] { -9, 0, 9, 18 };
-	private static final int[] UL2 = new int[] { -18, -9, 0, 9 };
-	private static final int[] UL3 = new int[] { -27, -18, -9, 0 };
+	private static final byte[] UL0 = new byte[] { 0, 9, 18, 27 };
+	private static final byte[] UL1 = new byte[] { -9, 0, 9, 18 };
+	private static final byte[] UL2 = new byte[] { -18, -9, 0, 9 };
+	private static final byte[] UL3 = new byte[] { -27, -18, -9, 0 };
 
-	private static final int[] U0 = new int[] { 0, 10, 20, 30 };
-	private static final int[] U1 = new int[] { -10, 0, 10, 20 };
-	private static final int[] U2 = new int[] { -20, -10, 0, 10 };
-	private static final int[] U3 = new int[] { -30, -20, -10, 0 };
+	private static final byte[] U0 = new byte[] { 0, 10, 20, 30 };
+	private static final byte[] U1 = new byte[] { -10, 0, 10, 20 };
+	private static final byte[] U2 = new byte[] { -20, -10, 0, 10 };
+	private static final byte[] U3 = new byte[] { -30, -20, -10, 0 };
 
-	private static final int[] UR0 = new int[] { 0, 11, 22, 33 };
-	private static final int[] UR1 = new int[] { -11, 0, 11, 22 };
-	private static final int[] UR2 = new int[] { -22, -11, 0, 11 };
-	private static final int[] UR3 = new int[] { -33, -22, -11, 0 };
+	private static final byte[] UR0 = new byte[] { 0, 11, 22, 33 };
+	private static final byte[] UR1 = new byte[] { -11, 0, 11, 22 };
+	private static final byte[] UR2 = new byte[] { -22, -11, 0, 11 };
+	private static final byte[] UR3 = new byte[] { -33, -22, -11, 0 };
 
-	private static final int[] R0 = new int[] { 0, 1, 2, 3 };
-	private static final int[] R1 = new int[] { -1, 0, 1, 2 };
-	private static final int[] R2 = new int[] { -2, -1, 0, 1 };
-	private static final int[] R3 = new int[] { -3, -2, -1, 0 };
+	private static final byte[] R0 = new byte[] { 0, 1, 2, 3 };
+	private static final byte[] R1 = new byte[] { -1, 0, 1, 2 };
+	private static final byte[] R2 = new byte[] { -2, -1, 0, 1 };
+	private static final byte[] R3 = new byte[] { -3, -2, -1, 0 };
 
-	private static final int[][] C00 = new int[][] { U0, UR0, R0 };
-	private static final int[][] C01 = new int[][] { U0, UR0, R0, R1 };
-	private static final int[][] C02 = new int[][] { U0, UR0, R0, R1, R2 };
-	private static final int[][] C03 = new int[][] { UL0, U0, UR0, R0, R1, R2, R3 };
-	private static final int[][] C04 = new int[][] { UL0, U0, R1, R2, R3 };
-	private static final int[][] C05 = new int[][] { UL0, U0, R2, R3 };
-	private static final int[][] C06 = new int[][] { UL0, U0, R3 };
+	private static final byte[][] C00 = new byte[][] { U0, UR0, R0 };
+	private static final byte[][] C01 = new byte[][] { U0, UR0, R0, R1 };
+	private static final byte[][] C02 = new byte[][] { U0, UR0, R0, R1, R2 };
+	private static final byte[][] C03 = new byte[][] { UL0, U0, UR0, R0, R1, R2, R3 };
+	private static final byte[][] C04 = new byte[][] { UL0, U0, R1, R2, R3 };
+	private static final byte[][] C05 = new byte[][] { UL0, U0, R2, R3 };
+	private static final byte[][] C06 = new byte[][] { UL0, U0, R3 };
 
-	private static final int[][] C10 = new int[][] { U0, U1, UR0, R0 };
-	private static final int[][] C11 = new int[][] { U0, U1, UR0, UR1, R0, R1 };
-	private static final int[][] C12 = new int[][] { UL1, U0, U1, UR0, UR1, R0, R1, R2 };
-	private static final int[][] C13 = new int[][] { UL0, UL1, U0, U1, UR0, UR1, R0, R1, R2, R3 };
-	private static final int[][] C14 = new int[][] { UL0, UL1, U0, U1, UR1, R1, R2, R3 };
-	private static final int[][] C15 = new int[][] { UL0, UL1, U0, U1, R2, R3 };
-	private static final int[][] C16 = new int[][] { UL0, U0, U1, R3 };
+	private static final byte[][] C10 = new byte[][] { U0, U1, UR0, R0 };
+	private static final byte[][] C11 = new byte[][] { U0, U1, UR0, UR1, R0, R1 };
+	private static final byte[][] C12 = new byte[][] { UL1, U0, U1, UR0, UR1, R0, R1, R2 };
+	private static final byte[][] C13 = new byte[][] { UL0, UL1, U0, U1, UR0, UR1, R0, R1, R2, R3 };
+	private static final byte[][] C14 = new byte[][] { UL0, UL1, U0, U1, UR1, R1, R2, R3 };
+	private static final byte[][] C15 = new byte[][] { UL0, UL1, U0, U1, R2, R3 };
+	private static final byte[][] C16 = new byte[][] { UL0, U0, U1, R3 };
 
-	private static final int[][] C20 = new int[][] { U0, U1, U2, UR0, R0 };
-	private static final int[][] C21 = new int[][] { UL2, U0, U1, U2, UR0, UR1, R0, R1 };
-	private static final int[][] C22 = new int[][] { UL1, UL2, U0, U1, U2, UR0, UR1, UR2, R0, R1, R2 };
-	private static final int[][] C23 = new int[][] { UL0, UL1, UL2, U0, U1, U2, UR0, UR1, UR2, R0, R1, R2, R3 };
-	private static final int[][] C24 = new int[][] { UL0, UL1, UL2, U0, U1, U2, UR1, UR2, R1, R2, R3 };
-	private static final int[][] C25 = new int[][] { UL0, UL1, U0, U1, U2, UR2, R2, R3 };
-	private static final int[][] C26 = new int[][] { UL0, U0, U1, U2, R3 };
+	private static final byte[][] C20 = new byte[][] { U0, U1, U2, UR0, R0 };
+	private static final byte[][] C21 = new byte[][] { UL2, U0, U1, U2, UR0, UR1, R0, R1 };
+	private static final byte[][] C22 = new byte[][] { UL1, UL2, U0, U1, U2, UR0, UR1, UR2, R0, R1, R2 };
+	private static final byte[][] C23 = new byte[][] { UL0, UL1, UL2, U0, U1, U2, UR0, UR1, UR2, R0, R1, R2, R3 };
+	private static final byte[][] C24 = new byte[][] { UL0, UL1, UL2, U0, U1, U2, UR1, UR2, R1, R2, R3 };
+	private static final byte[][] C25 = new byte[][] { UL0, UL1, U0, U1, U2, UR2, R2, R3 };
+	private static final byte[][] C26 = new byte[][] { UL0, U0, U1, U2, R3 };
 
-	private static final int[][] C30 = new int[][] { UL3, U0, U1, U2, U3, UR0, R0 };
-	private static final int[][] C31 = new int[][] { UL2, UL3, U0, U1, U2, U3, UR0, UR1, R0, R1 };
-	private static final int[][] C32 = new int[][] { UL1, UL2, UL3, U0, U1, U2, U3, UR0, UR1, UR2, R0, R1, R2 };
-	private static final int[][] C33 = new int[][] { UL0, UL1, UL2, UL3, U0, U1, U2, U3, UR0, UR1, UR2, UR3, R0, R1, R2, R3 };
-	private static final int[][] C34 = new int[][] { UL0, UL1, UL2, U0, U1, U2, U3, UR1, UR2, UR3, R1, R2, R3 };
-	private static final int[][] C35 = new int[][] { UL0, UL1, U0, U1, U2, U3, UR2, UR3, R2, R3 };
-	private static final int[][] C36 = new int[][] { UL0, U0, U1, U2, U3, UR3, R3 };
+	private static final byte[][] C30 = new byte[][] { UL3, U0, U1, U2, U3, UR0, R0 };
+	private static final byte[][] C31 = new byte[][] { UL2, UL3, U0, U1, U2, U3, UR0, UR1, R0, R1 };
+	private static final byte[][] C32 = new byte[][] { UL1, UL2, UL3, U0, U1, U2, U3, UR0, UR1, UR2, R0, R1, R2 };
+	private static final byte[][] C33 = new byte[][] { UL0, UL1, UL2, UL3, U0, U1, U2, U3, UR0, UR1, UR2, UR3, R0, R1, R2, R3 };
+	private static final byte[][] C34 = new byte[][] { UL0, UL1, UL2, U0, U1, U2, U3, UR1, UR2, UR3, R1, R2, R3 };
+	private static final byte[][] C35 = new byte[][] { UL0, UL1, U0, U1, U2, U3, UR2, UR3, R2, R3 };
+	private static final byte[][] C36 = new byte[][] { UL0, U0, U1, U2, U3, UR3, R3 };
 
-	private static final int[][] C40 = new int[][] { UL3, U1, U2, U3, R0 };
-	private static final int[][] C41 = new int[][] { UL2, UL3, U1, U2, U3, UR1, R0, R1 };
-	private static final int[][] C42 = new int[][] { UL1, UL2, UL3, U1, U2, U3, UR1, UR2, R0, R1, R2 };
-	private static final int[][] C43 = new int[][] { UL1, UL2, UL3, U1, U2, U3, UR1, UR2, UR3, R0, R1, R2, R3 };
-	private static final int[][] C44 = new int[][] { UL1, UL2, U1, U2, U3, UR1, UR2, UR3, R1, R2, R3 };
-	private static final int[][] C45 = new int[][] { UL1, U1, U2, U3, UR2, UR3, R2, R3 };
-	private static final int[][] C46 = new int[][] { U1, U2, U3, UR3, R3 };
+	private static final byte[][] C40 = new byte[][] { UL3, U1, U2, U3, R0 };
+	private static final byte[][] C41 = new byte[][] { UL2, UL3, U1, U2, U3, UR1, R0, R1 };
+	private static final byte[][] C42 = new byte[][] { UL1, UL2, UL3, U1, U2, U3, UR1, UR2, R0, R1, R2 };
+	private static final byte[][] C43 = new byte[][] { UL1, UL2, UL3, U1, U2, U3, UR1, UR2, UR3, R0, R1, R2, R3 };
+	private static final byte[][] C44 = new byte[][] { UL1, UL2, U1, U2, U3, UR1, UR2, UR3, R1, R2, R3 };
+	private static final byte[][] C45 = new byte[][] { UL1, U1, U2, U3, UR2, UR3, R2, R3 };
+	private static final byte[][] C46 = new byte[][] { U1, U2, U3, UR3, R3 };
 
-	private static final int[][] C50 = new int[][] { UL3, U2, U3, R0 };
-	private static final int[][] C51 = new int[][] { UL2, UL3, U2, U3, R0, R1 };
-	private static final int[][] C52 = new int[][] { UL2, UL3, U2, U3, UR2, R0, R1, R2 };
-	private static final int[][] C53 = new int[][] { UL2, UL3, U2, U3, UR2, UR3, R0, R1, R2, R3 };
-	private static final int[][] C54 = new int[][] { UL2, U2, U3, UR2, UR3, R1, R2, R3 };
-	private static final int[][] C55 = new int[][] { U2, U3, UR2, UR3, R2, R3 };
-	private static final int[][] C56 = new int[][] { U2, U3, UR3, R3 };
+	private static final byte[][] C50 = new byte[][] { UL3, U2, U3, R0 };
+	private static final byte[][] C51 = new byte[][] { UL2, UL3, U2, U3, R0, R1 };
+	private static final byte[][] C52 = new byte[][] { UL2, UL3, U2, U3, UR2, R0, R1, R2 };
+	private static final byte[][] C53 = new byte[][] { UL2, UL3, U2, U3, UR2, UR3, R0, R1, R2, R3 };
+	private static final byte[][] C54 = new byte[][] { UL2, U2, U3, UR2, UR3, R1, R2, R3 };
+	private static final byte[][] C55 = new byte[][] { U2, U3, UR2, UR3, R2, R3 };
+	private static final byte[][] C56 = new byte[][] { U2, U3, UR3, R3 };
 
-	private static final int[][] C60 = new int[][] { UL3, U3, R0 };
-	private static final int[][] C61 = new int[][] { UL3, U3, R0, R1 };
-	private static final int[][] C62 = new int[][] { UL3, U3, R0, R1, R2 };
-	private static final int[][] C63 = new int[][] { UL3, U3, UR3, R0, R1, R2, R3 };
-	private static final int[][] C64 = new int[][] { U3, UR3, R1, R2, R3 };
-	private static final int[][] C65 = new int[][] { U3, UR3, R2, R3 };
-	private static final int[][] C66 = new int[][] { U3, UR3, R3 };
+	private static final byte[][] C60 = new byte[][] { UL3, U3, R0 };
+	private static final byte[][] C61 = new byte[][] { UL3, U3, R0, R1 };
+	private static final byte[][] C62 = new byte[][] { UL3, U3, R0, R1, R2 };
+	private static final byte[][] C63 = new byte[][] { UL3, U3, UR3, R0, R1, R2, R3 };
+	private static final byte[][] C64 = new byte[][] { U3, UR3, R1, R2, R3 };
+	private static final byte[][] C65 = new byte[][] { U3, UR3, R2, R3 };
+	private static final byte[][] C66 = new byte[][] { U3, UR3, R3 };
 
-	private static final int[][][] CHAIN = new int[][][] {
+	private static final byte[][][] CHAIN = new byte[][][] {
 			C00, C01, C02, C03, C04, C05, C06,
 			C10, C11, C12, C13, C14, C15, C16,
 			C20, C21, C22, C23, C24, C25, C26,
@@ -237,18 +249,18 @@ public class Main {
 			C60, C61, C62, C63, C64, C65, C66
 	};
 
-	private static final int VAL4 = 1000000000;
-	private static final int VAL3 = 1000000;
-	private static final int VAL2 = 1000;
-	private static final int VAL1 = 10;
-	private static final int VAL0 = 0;
+	private static final int VAL4 = 0x1000000;
+	private static final int VAL3 = 0x10000;
+	private static final int VAL2 = 0x100;
+	private static final int VAL1 = 0x1;
+	private static final int VAL0 = 0x0;
 
 	private static final int[] VAL = new int[] { VAL0, VAL1, VAL2, VAL3, VAL4 };
 
-	private static byte winner(int base, int[] chain) throws Exception {
-		int white = 0;
-		int black = 0;
-		for (int f = 0; f < 4; f++) {
+	private static byte winner(int base, byte[] chain) throws Exception {
+		byte white = 0;
+		byte black = 0;
+		for (byte f = 0; f < 4; f++) {
 			byte stone = board[base + chain[f]];
 			if (stone == WHITE)
 				white++;
@@ -264,10 +276,10 @@ public class Main {
 		return SPACE;
 	}
 
-	private static byte winner(int row, int column) throws Exception {
+	private static byte winner(byte row, byte column) throws Exception {
 		int base = index(row, column);
-		int[][] chains = CHAIN[row * COLUMNS + column];
-		for (int c = 0; c < chains.length; c++) {
+		byte[][] chains = CHAIN[row * COLUMNS + column];
+		for (byte c = 0; c < chains.length; c++) {
 			byte winner = winner(base, chains[c]);
 			if (winner != SPACE)
 				return winner;
@@ -275,19 +287,19 @@ public class Main {
 		return SPACE;
 	}
 
-	private static byte winner(int column) throws Exception {
-		byte winner = winner(top[column] - 1, column);
+	private static byte winner(byte column) throws Exception {
+		byte winner = winner((byte) (top[column] - 1), column);
 		if (winner != SPACE)
 			return winner;
 		boolean allColumnsFull = true;
-		for (int c = 0; c < COLUMNS; c++)
+		for (byte c = 0; c < COLUMNS; c++)
 			allColumnsFull &= top[c] >= ROWS;
 		return allColumnsFull ? FRAME : SPACE;
 	}
 
-	private static int value(byte color, int base, int[] chain) throws Exception {
-		int num = 0;
-		for (int f = 0; f < 4; f++) {
+	private static int value(byte color, int base, byte[] chain) throws Exception {
+		byte num = 0;
+		for (byte f = 0; f < 4; f++) {
 			byte stone = board[base + chain[f]];
 			if (stone == color)
 				num++;
@@ -299,9 +311,9 @@ public class Main {
 		return VAL[num];
 	}
 
-	private static int value(byte color, int base, int[][] chains) throws Exception {
+	private static int value(byte color, int base, byte[][] chains) throws Exception {
 		int value = 0;
-		for (int c = 0; c < chains.length; c++) {
+		for (byte c = 0; c < chains.length; c++) {
 			int chainValue = value(color, base, chains[c]);
 			if (chainValue > value)
 				value = chainValue;
@@ -309,16 +321,16 @@ public class Main {
 		return value;
 	}
 
-	private static int value(int row, int column) throws Exception {
+	private static int value(byte row, byte column) throws Exception {
 		int base = index(row, column);
-		int[][] chains = CHAIN[row * COLUMNS + column];
+		byte[][] chains = CHAIN[row * COLUMNS + column];
 		return value(WHITE, base, chains) - value(BLACK, base, chains);
 	}
 
 	private static int value() throws Exception {
 		int value = 0;
-		for (int c = 0; c < COLUMNS; c++) {
-			for (int r = top[c]; r < ROWS; r++) {
+		for (byte c = 0; c < COLUMNS; c++) {
+			for (byte r = top[c]; r < ROWS; r++) {
 				value += value(r, c);
 			}
 		}
@@ -327,12 +339,16 @@ public class Main {
 
 	// Search
 
-	private static int white(int alpha, int beta) throws Exception {
-		return 0;
+	private static int white(int alpha, int beta, byte level) throws Exception {
+		if (level == 0)
+			return value(); // column bits invalid
+		return getOptions().get(0) << 28; // for testing
 	}
 
-	private static int black(int alpha, int beta) throws Exception {
-		return 0;
+	private static int black(int alpha, int beta, byte level) throws Exception {
+		if (level == 0)
+			return value(); // column bits invalid
+		return getOptions().get(0) << 28; // for testing
 	}
 
 }

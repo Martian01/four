@@ -1,5 +1,7 @@
 package com.mr.four;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -53,6 +55,20 @@ public class Main {
 		board[index(top[column]++, column)] = color;
 	}
 
+	private static boolean isOption(int column) {
+		return column >= 0 && column < COLUMNS && top[column] < ROWS;
+	}
+
+	private static List<Integer> getOptions() throws Exception {
+		ArrayList<Integer> options = new ArrayList<>(COLUMNS);
+		for (int c = 0; c < COLUMNS; c++)
+			if (top[c] < ROWS)
+				options.add(c);
+		if (options.isEmpty())
+			throw new Exception();
+		return options;
+	}
+
 	// Game Loop
 
 	private static void start() {
@@ -89,21 +105,15 @@ public class Main {
 	private static int strategyUser(byte color) {
 		for (;;) {
 			int column = getUserInput(color);
-			if (column >= 0 && column < COLUMNS && top[column] < ROWS)
-				return column;;
+			if (isOption(column))
+				return column;
 			System.out.println("Illegal move. Try again.");
 		}
 	}
 
 	private static int strategyRandom(byte color) throws Exception {
-		int[] colums = new int[COLUMNS];
-		int options = 0;
-		for (int c = 0; c < COLUMNS; c++)
-			if (top[c] < ROWS)
-				colums[options++] = c;
-		if (options == 0)
-			throw new Exception();
-		return colums[(int) (Math.random() * options)];
+		List<Integer> options = getOptions();
+		return options.get((int) (Math.random() * options.size()));
 	}
 
 	private static int strategySearch(byte color) throws Exception {

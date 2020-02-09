@@ -1,6 +1,7 @@
 package com.mr.four;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -22,7 +23,7 @@ public class Main {
 	private static final byte BLACK = 2;
 	private static final byte FRAME = 3;
 
-	private static final byte[] BOARD = new byte[] {
+	private static final byte[] INITIAL_BOARD = new byte[] {
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
@@ -38,7 +39,7 @@ public class Main {
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME
 	};
 
-	private static final byte[] TOP = new byte[] { 0, 0, 0, 0, 0, 0, 0 };
+	private static final byte[] ZERO_COLUMNS = new byte[] { 0, 0, 0, 0, 0, 0, 0 };
 
 	private static final byte ROWS = 7;
 	private static final byte COLUMNS = 7;
@@ -47,9 +48,9 @@ public class Main {
 		return (COLUMNS + 3) * (row + 3) + column;
 	}
 
-	private static byte[] board = new byte[BOARD.length];
+	private static byte[] board = new byte[INITIAL_BOARD.length];
 
-	private static byte[] top = new byte[TOP.length];
+	private static byte[] top = new byte[ZERO_COLUMNS.length];
 
 	private static void drop(byte column, byte color) {
 		board[index(top[column]++, column)] = color;
@@ -80,8 +81,8 @@ public class Main {
 	// Game Loop
 
 	private static void start() {
-		System.arraycopy(BOARD, 0, board, 0, BOARD.length);
-		System.arraycopy(TOP, 0, top, 0, TOP.length);
+		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);
+		System.arraycopy(ZERO_COLUMNS, 0, top, 0, ZERO_COLUMNS.length);
 		try {
 			loop();
 		} catch (Exception e) {
@@ -94,15 +95,13 @@ public class Main {
 		byte winner;
 		do {
 			printBoard();
-			printValue();
-			byte column = player == WHITE ? strategyRandom(player) : strategySearch(player);
+			byte column = player == WHITE ? strategyUser(player) : strategySearch(player);
 			drop(column, player);
 			winner = winner(column);
 			player = (byte) (3 - player);
 		}
 		while (winner == SPACE);
 		printBoard();
-		printValue();
 		switch (winner) {
 			case WHITE: System.out.println("You win.\n"); break;
 			case BLACK: System.out.println("You lose.\n"); break;
@@ -129,7 +128,7 @@ public class Main {
 
 	private static byte strategySearch(byte color) throws Exception {
 		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL);
-		return (byte) (result >> 28);
+		return (byte) (result & 0xF);
 	}
 
 	// User Interaction
@@ -249,10 +248,10 @@ public class Main {
 			C60, C61, C62, C63, C64, C65, C66
 	};
 
-	private static final int VAL4 = 0x1000000;
-	private static final int VAL3 = 0x10000;
-	private static final int VAL2 = 0x100;
-	private static final int VAL1 = 0x1;
+	private static final int VAL4 = 0x10000000;
+	private static final int VAL3 = 0x100000;
+	private static final int VAL2 = 0x1000;
+	private static final int VAL1 = 0x10;
 	private static final int VAL0 = 0x0;
 
 	private static final int[] VAL = new int[] { VAL0, VAL1, VAL2, VAL3, VAL4 };
@@ -297,6 +296,8 @@ public class Main {
 		return allColumnsFull ? FRAME : SPACE;
 	}
 
+	private static final int[] WINNER_VAL = new int[] { 0, VAL4, -VAL4, 0};
+
 	private static int value(byte color, int base, byte[] chain) throws Exception {
 		byte num = 0;
 		for (byte f = 0; f < 4; f++) {
@@ -329,26 +330,176 @@ public class Main {
 
 	private static int value() throws Exception {
 		int value = 0;
-		for (byte c = 0; c < COLUMNS; c++) {
-			for (byte r = top[c]; r < ROWS; r++) {
+		for (byte c = 0; c < COLUMNS; c++)
+			for (byte r = top[c]; r < ROWS; r++)
 				value += value(r, c);
-			}
-		}
+		return value;
+	}
+
+	private static int value(byte row, byte column, byte[] lowestWhite, byte[] lowestBlack) throws Exception {
+		int base = index(row, column);
+		byte[][] chains = CHAIN[row * COLUMNS + column];
+		int valueWhite = value(WHITE, base, chains);
+		int valueBlack = value(BLACK, base, chains);
+		if (valueWhite >= VAL3 && lowestWhite[column] < 0)
+			lowestWhite[column] = row;
+		if (valueBlack >= VAL3 && lowestBlack[column] < 0)
+			lowestBlack[column] = row;
+		return valueWhite - valueBlack;
+	}
+
+	private static int value(byte[] lowestWhite, byte[] lowestBlack) throws Exception {
+		int value = 0;
+		for (byte c = 0; c < COLUMNS; c++)
+			for (byte r = top[c]; r < ROWS; r++)
+				value += value(r, c, lowestWhite, lowestBlack);
 		return value;
 	}
 
 	// Search
 
+	private static final boolean DEBUG = true;
+
+	private static String dbg(byte[] a) {
+		StringBuilder sb = new StringBuilder("[");
+		for (int i = 0; i < a.length; i++) {
+			sb.append(a[i]);
+			sb.append(i == a.length - 1 ? "]" : ",");
+		}
+		return sb.toString();
+	}
+
+	private static String dbg(int[] a) {
+		StringBuilder sb = new StringBuilder("[");
+		for (int i = 0; i < a.length; i++) {
+			sb.append(Integer.toHexString(a[i]));
+			sb.append(i == a.length - 1 ? "]" : ",");
+		}
+		return sb.toString();
+	}
+
+	private static String dbg(int i) {
+		return Integer.toHexString(i);
+	}
+
+	// TODO: quiescence search
+
 	private static int white(int alpha, int beta, byte level) throws Exception {
+		if (DEBUG) System.out.println("W" + level + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
+		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
+		int value = value(lowestWhite, lowestBlack);
+		if (DEBUG) System.out.println("W" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
 		if (level == 0)
-			return value(); // column bits invalid
-		return getOptions().get(0) << 28; // for testing
+			return value; // column bits invalid
+		// build a sorted work list of moves
+		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
+		for (byte c = 0; c < COLUMNS; c++) {
+			byte r = lowestWhite[c];
+			if (r >= 0)
+				moves[c] |= r == top[c] ? 0x1000 : 0x100;
+			r = lowestBlack[c];
+			if (r >= 0)
+				moves[c] |= r == top[c] ? 0x2000 : 0x200;
+		}
+		Arrays.sort(moves);
+		if (DEBUG) System.out.println("W" + level + " moves=" + dbg(moves));
+		// try all moves in the sorted list
+		byte bestColumn = 0xF;
+		int bestValue = Integer.MIN_VALUE;
+		for (byte i = COLUMNS - 1; i >= 0; i--) {
+			int move = moves[i];
+			byte column = (byte) (move & 0xF);
+			if ((move & 0x2000) != 0) { // shortcut for mate situation
+				if (DEBUG) System.out.println("W" + level + " retVal=" + dbg(-VAL4) + " retCol=" + column);
+				return -VAL4 | column;
+			}
+			if (top[column] < ROWS) { // only legal moves
+				drop(column, WHITE);
+				byte winner = winner(column);
+				if (winner != SPACE) {
+					revert(column);
+					if (DEBUG) System.out.println("W" + level + " winVal=" + dbg(winner) + " winCol=" + column);
+					return WINNER_VAL[winner] | column;
+				}
+				if (DEBUG) System.out.println("W" + level  + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+				value = black(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
+				revert(column);
+				if (value > bestValue) {
+					bestValue = value;
+					bestColumn = column;
+				}
+				if (value > alpha)
+					alpha = value;
+				if (alpha >= beta) {
+					if (DEBUG) System.out.println("W" + level + " pruning");
+					break;
+				}
+			}
+		}
+		if (DEBUG) System.out.println("W" + level + " bestVal=" + dbg(bestValue) + " bstCol=" + bestColumn);
+		if (bestColumn == 0xF)
+			throw new Exception();
+		return bestValue | bestColumn;
 	}
 
 	private static int black(int alpha, int beta, byte level) throws Exception {
+		if (DEBUG) System.out.println("B" + level + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
+		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
+		int value = value(lowestWhite, lowestBlack);
+		if (DEBUG) System.out.println("B" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
 		if (level == 0)
-			return value(); // column bits invalid
-		return getOptions().get(0) << 28; // for testing
+			return value; // column bits invalid
+		// build a sorted work list of moves
+		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
+		for (byte c = 0; c < COLUMNS; c++) {
+			byte r = lowestBlack[c];
+			if (r >= 0)
+				moves[c] |= r == top[c] ? 0x1000 : 0x100;
+			r = lowestWhite[c];
+			if (r >= 0)
+				moves[c] |= r == top[c] ? 0x2000 : 0x200;
+		}
+		Arrays.sort(moves);
+		if (DEBUG) System.out.println("B" + level + " moves=" + dbg(moves));
+		// try all moves in the sorted list
+		byte bestColumn = 0xF;
+		int bestValue = Integer.MAX_VALUE;
+		for (byte i = COLUMNS - 1; i >= 0; i--) {
+			int move = moves[i];
+			byte column = (byte) (move & 0xF);
+			if ((move & 0x2000) != 0) { // shortcut for mate situation
+				if (DEBUG) System.out.println("B" + level + " retVal=" + dbg(-VAL4) + " retCol=" + column);
+				return VAL4 | column;
+			}
+			if (top[column] < ROWS) { // only legal moves
+				drop(column, BLACK);
+				byte winner = winner(column);
+				if (winner != SPACE) {
+					revert(column);
+					if (DEBUG) System.out.println("B" + level + " winVal=" + dbg(-VAL4) + " winCol=" + column);
+					return WINNER_VAL[winner] | column;
+				}
+				if (DEBUG) System.out.println("B" + level  + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+				value = white(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
+				revert(column);
+				if (value < bestValue) {
+					bestValue = value;
+					bestColumn = column;
+				}
+				if (value < beta)
+					beta = value;
+				if (alpha >= beta) {
+					if (DEBUG) System.out.println("B" + level + " pruning");
+					break;
+				}
+			}
+		}
+		if (DEBUG) System.out.println("B" + level + " bestVal=" + dbg(bestValue) + " bstCol=" + bestColumn);
+		if (bestColumn == 0xF)
+			throw new Exception();
+		return bestValue | bestColumn;
 	}
 
 }

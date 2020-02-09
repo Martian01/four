@@ -11,6 +11,10 @@ public class Main {
 
     public static void main(String[] args) {
 		System.out.println("\nGreetings, Professor Falken. Shall we play a game?");
+		System.out.print("\nWhat is your level (0 = poor, 1, 2, 3 = stronger)? ");
+		byte b = (byte) in.nextByte();
+		DEBUG = (b & 0xF0) != 0;
+		LEVEL = (byte) (b & 0x0F);
 	    start();
     }
 
@@ -124,7 +128,7 @@ public class Main {
 		return options.get((int) (r * r * options.size()));
 	}
 
-	private static final byte LEVEL = 2;
+	private static byte LEVEL = 3;
 
 	private static byte strategySearch(byte color) throws Exception {
 		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL);
@@ -358,7 +362,7 @@ public class Main {
 
 	// Search
 
-	private static final boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	private static String dbg(byte[] a) {
 		StringBuilder sb = new StringBuilder("[");

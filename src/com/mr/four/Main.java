@@ -124,10 +124,10 @@ public class Main {
 		return options.get((int) (r * r * options.size()));
 	}
 
-	private static final byte MAXLEVEL = 1; // must be greater then 0
+	private static final byte LEVEL = 2;
 
 	private static byte strategySearch(byte color) throws Exception {
-		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, MAXLEVEL);
+		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL);
 		return (byte) (result & 0xF);
 	}
 
@@ -382,58 +382,66 @@ public class Main {
 		return Integer.toHexString(i);
 	}
 
-	// TODO: quiescence search
-
 	private static int white(int alpha, int beta, byte level) throws Exception {
 		if (DEBUG) System.out.println("W" + level + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
 		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		int value = value(lowestWhite, lowestBlack);
 		if (DEBUG) System.out.println("W" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
-		if (level == 0)
-			return value; // column bits invalid
 		// build a sorted work list of moves
 		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
 		for (byte c = 0; c < COLUMNS; c++) {
 			byte r = lowestWhite[c];
 			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x1000 : 0x100;
+				moves[c] |= r == top[c] ? 0x2000 : 0x200;
 			r = lowestBlack[c];
 			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x2000 : 0x200;
+				moves[c] |= r == top[c] ? 0x1000 : 0x100;
 		}
 		Arrays.sort(moves);
 		if (DEBUG) System.out.println("W" + level + " moves=" + dbg(moves));
-		// try all moves in the sorted list
 		byte bestColumn = 0xF;
 		int bestValue = Integer.MIN_VALUE;
-		for (byte i = COLUMNS - 1; i >= 0; i--) {
+		// go through all legal moves in the sorted list
+		boolean notSeenHighestRatedLegalMove = true;
+		for (byte i = COLUMNS - 1; i >= 0; i--) { // from highest to lowest rating
 			int move = moves[i];
 			byte column = (byte) (move & 0xF);
-			if ((move & 0x2000) != 0) { // shortcut for mate situation
-				if (DEBUG) System.out.println("W" + level + " retVal=" + dbg(-VAL4) + " retCol=" + column);
-				return -VAL4 | column;
-			}
-			if (top[column] < ROWS) { // only legal moves
-				drop(column, WHITE);
-				byte winner = winner(column);
-				if (winner != SPACE) {
+			if (top[column] < ROWS) { // legal move
+				if (notSeenHighestRatedLegalMove) {
+					notSeenHighestRatedLegalMove = false;
+					// shortcut for mate situation
+					if ((move & 0x2000) != 0) {
+						if (DEBUG) System.out.println("W" + level + " mateVal=" + dbg(VAL4) + " mateCol=" + column);
+						return VAL4 | column;
+					}
+					// check if this is a leaf of the search tree
+					if (level <= 0 && move < 0x100) { // no hidden mates
+						if (DEBUG) System.out.println("W" + level + " leafVal=" + dbg(value) + " leafCol=" + column);
+						return value | column;
+					}
+				}
+				if (level > 0 || move >= 0x100) { // quiescence search
+					drop(column, WHITE);
+					byte winner = winner(column);
+					if (winner != SPACE) {
+						revert(column);
+						if (DEBUG) System.out.println("W" + level + " winVal=" + dbg(WINNER_VAL[winner]) + " winCol=" + column);
+						return WINNER_VAL[winner] | column;
+					}
+					if (DEBUG) System.out.println("W" + level + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+					value = black(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
 					revert(column);
-					if (DEBUG) System.out.println("W" + level + " winVal=" + dbg(winner) + " winCol=" + column);
-					return WINNER_VAL[winner] | column;
-				}
-				if (DEBUG) System.out.println("W" + level  + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
-				value = black(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
-				revert(column);
-				if (value > bestValue) {
-					bestValue = value;
-					bestColumn = column;
-				}
-				if (value > alpha)
-					alpha = value;
-				if (alpha >= beta) {
-					if (DEBUG) System.out.println("W" + level + " pruning");
-					break;
+					if (value > bestValue) {
+						bestValue = value;
+						bestColumn = column;
+					}
+					if (value > alpha)
+						alpha = value;
+					if (alpha >= beta) {
+						if (DEBUG) System.out.println("W" + level + " pruning");
+						break;
+					}
 				}
 			}
 		}
@@ -449,50 +457,60 @@ public class Main {
 		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		int value = value(lowestWhite, lowestBlack);
 		if (DEBUG) System.out.println("B" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
-		if (level == 0)
-			return value; // column bits invalid
 		// build a sorted work list of moves
 		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
 		for (byte c = 0; c < COLUMNS; c++) {
 			byte r = lowestBlack[c];
 			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x1000 : 0x100;
+				moves[c] |= r == top[c] ? 0x2000 : 0x200;
 			r = lowestWhite[c];
 			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x2000 : 0x200;
+				moves[c] |= r == top[c] ? 0x1000 : 0x100;
 		}
 		Arrays.sort(moves);
 		if (DEBUG) System.out.println("B" + level + " moves=" + dbg(moves));
-		// try all moves in the sorted list
 		byte bestColumn = 0xF;
 		int bestValue = Integer.MAX_VALUE;
-		for (byte i = COLUMNS - 1; i >= 0; i--) {
+		// go through all legal moves in the sorted list
+		boolean notSeenHighestRatedLegalMove = true;
+		for (byte i = COLUMNS - 1; i >= 0; i--) { // from highest to lowest rating
 			int move = moves[i];
 			byte column = (byte) (move & 0xF);
-			if ((move & 0x2000) != 0) { // shortcut for mate situation
-				if (DEBUG) System.out.println("B" + level + " retVal=" + dbg(-VAL4) + " retCol=" + column);
-				return VAL4 | column;
-			}
-			if (top[column] < ROWS) { // only legal moves
-				drop(column, BLACK);
-				byte winner = winner(column);
-				if (winner != SPACE) {
+			if (top[column] < ROWS) { // legal move
+				if (notSeenHighestRatedLegalMove) {
+					notSeenHighestRatedLegalMove = false;
+					// shortcut for mate situation
+					if ((move & 0x2000) != 0) {
+						if (DEBUG) System.out.println("B" + level + " mateVal=" + dbg(-VAL4) + " mateCol=" + column);
+						return -VAL4 | column;
+					}
+					// check if this is a leaf of the search tree
+					if (level <= 0 && move < 0x100) { // no hidden mates
+						if (DEBUG) System.out.println("B" + level + " leafVal=" + dbg(value) + " leafCol=" + column);
+						return value | column;
+					}
+				}
+				if (level > 0 || move >= 0x100) { // quiescence search
+					drop(column, BLACK);
+					byte winner = winner(column);
+					if (winner != SPACE) {
+						revert(column);
+						if (DEBUG) System.out.println("B" + level + " winVal=" + dbg(WINNER_VAL[winner]) + " winCol=" + column);
+						return WINNER_VAL[winner] | column;
+					}
+					if (DEBUG) System.out.println("B" + level + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+					value = white(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
 					revert(column);
-					if (DEBUG) System.out.println("B" + level + " winVal=" + dbg(-VAL4) + " winCol=" + column);
-					return WINNER_VAL[winner] | column;
-				}
-				if (DEBUG) System.out.println("B" + level  + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
-				value = white(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
-				revert(column);
-				if (value < bestValue) {
-					bestValue = value;
-					bestColumn = column;
-				}
-				if (value < beta)
-					beta = value;
-				if (alpha >= beta) {
-					if (DEBUG) System.out.println("B" + level + " pruning");
-					break;
+					if (value < bestValue) {
+						bestValue = value;
+						bestColumn = column;
+					}
+					if (value < beta)
+						beta = value;
+					if (alpha >= beta) {
+						if (DEBUG) System.out.println("B" + level + " pruning");
+						break;
+					}
 				}
 			}
 		}

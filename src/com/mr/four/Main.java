@@ -7,7 +7,7 @@ public class Main {
 	private static Scanner in = new Scanner(System.in);
 
     public static void main(String[] args) {
-		System.out.println("\nHello Dr Falcon. Would you like to play a game?");
+		System.out.println("\nGreetings, Professor Falken. Shall we play a game?");
 	    start();
     }
 
@@ -49,11 +49,8 @@ public class Main {
 
 	private static int[] top = new int[TOP.length];
 
-	private static boolean drop(int column, byte color) {
-		if (column < 0 ||column >= COLUMNS || top[column] >= ROWS)
-			return false;
+	private static void drop(int column, byte color) {
 		board[index(top[column]++, column)] = color;
-		return true;
 	}
 
 	// Game Loop
@@ -74,13 +71,8 @@ public class Main {
 		do {
 			printBoard();
 			printValue();
-			int column;
-			for (;;) {
-				column = getUserInput();
-				if (drop(column, player))
-					break;
-				System.out.println("Illegal move. Try again.");
-			}
+			int column = player == WHITE ? strategyUser(player) : strategyRandom(player);
+			drop(column, player);
 			winner = winner(column);
 			player = (byte) (3 - player);
 		}
@@ -92,6 +84,30 @@ public class Main {
 			case BLACK: System.out.println("You lose.\n"); break;
 			default: System.out.println("It's a draw.\n");
 		}
+	}
+
+	private static int strategyUser(byte color) {
+		for (;;) {
+			int column = getUserInput(color);
+			if (column >= 0 && column < COLUMNS && top[column] < ROWS)
+				return column;;
+			System.out.println("Illegal move. Try again.");
+		}
+	}
+
+	private static int strategyRandom(byte color) throws Exception {
+		int[] colums = new int[COLUMNS];
+		int options = 0;
+		for (int c = 0; c < COLUMNS; c++)
+			if (top[c] < ROWS)
+				colums[options++] = c;
+		if (options == 0)
+			throw new Exception();
+		return colums[(int) (Math.random() * options)];
+	}
+
+	private static int strategySearch(byte color) throws Exception {
+		return color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE) : black(Integer.MIN_VALUE, Integer.MAX_VALUE);
 	}
 
 	// User Interaction
@@ -118,19 +134,9 @@ public class Main {
 		System.out.println("\nValue: " + value() + "\n");
 	}
 
-	private static int getUserInput() {
-		System.out.print("Your move: ");
+	private static int getUserInput(byte color) {
+		System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
 		return in.nextInt() - 1;
-	}
-
-	// Search
-
-	private static int white(int alpha, int beta) {
-		return 0;
-	}
-
-	private static int black(int alpha, int beta) {
-		return 0;
 	}
 
 	// Valuation, specific to a 7x7 board
@@ -307,6 +313,16 @@ public class Main {
 			}
 		}
 		return value;
+	}
+
+	// Search
+
+	private static int white(int alpha, int beta) throws Exception {
+		return 0;
+	}
+
+	private static int black(int alpha, int beta) throws Exception {
+		return 0;
 	}
 
 }

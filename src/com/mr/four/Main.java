@@ -8,15 +8,48 @@ import java.util.Scanner;
 public class Main {
 
 	private static Scanner in = new Scanner(System.in);
+	private static byte LEVEL = 1;
+	private static boolean DEBUG = false;
+	private static Log log;
 
-    public static void main(String[] args) {
+	public static void main(String[] args) {
 		System.out.println("\nGreetings, Professor Falken. Shall we play a game?");
-		System.out.print("\nWhat is your level (0 = poor, 1, 2, 3 = stronger)? ");
-		byte b = (byte) in.nextByte();
-		DEBUG = (b & 0xF0) != 0;
-		LEVEL = (byte) (b & 0x0F);
+		System.out.print("\nWhat is your level (0, 1, 2, 3 ...)? ");
+		LEVEL = (byte) in.nextByte();
+		for (String arg : args)
+			DEBUG |= "debug".equals(arg);
+		if (DEBUG)
+			log = new Log();
 	    start();
     }
+
+	private static String dbg(byte[] a) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < a.length; i++) {
+			sb.append(a[i]);
+			if (i < a.length - 1)
+				sb.append(",");
+		}
+		return sb.toString();
+	}
+
+	private static String dbx(int[] a) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < a.length; i++) {
+			sb.append(Integer.toHexString(a[i]));
+			if (i < a.length - 1)
+				sb.append(",");
+		}
+		return sb.toString();
+	}
+
+	private static String dbg(byte i) {
+		return Byte.toString(i);
+	}
+
+	private static String dbx(int i) {
+		return Integer.toHexString(i);
+	}
 
 	// Board Definition
 
@@ -88,7 +121,13 @@ public class Main {
 		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);
 		System.arraycopy(ZERO_COLUMNS, 0, top, 0, ZERO_COLUMNS.length);
 		try {
+			if (DEBUG) {
+				log.openFile();
+				log.openNode("match");
+			}
 			loop();
+			if (DEBUG)
+				log.closeFile();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -101,10 +140,12 @@ public class Main {
 			printBoard();
 			byte column = player == WHITE ? strategyUser(player) : strategySearch(player);
 			drop(column, player);
+			if (DEBUG) log.logNode("drop", "column" , dbg(column));
 			winner = winner(column);
 			player = (byte) (3 - player);
 		}
 		while (winner == SPACE);
+		if (DEBUG) log.logNode("result", "winner" , dbg(winner));
 		printBoard();
 		switch (winner) {
 			case WHITE: System.out.println("You win.\n"); break;
@@ -113,7 +154,8 @@ public class Main {
 		}
 	}
 
-	private static byte strategyUser(byte color) {
+	private static byte strategyUser(byte color) throws Exception {
+		if (DEBUG) log.logNode("user");
 		for (;;) {
 			byte column = getUserInput(color);
 			if (isOption(column))
@@ -123,15 +165,16 @@ public class Main {
 	}
 
 	private static byte strategyRandom(byte color) throws Exception {
+		if (DEBUG) log.logNode("random");
 		List<Byte> options = getOptions();
 		double r = Math.random();
 		return options.get((int) (r * r * options.size()));
 	}
 
-	private static byte LEVEL = 3;
-
 	private static byte strategySearch(byte color) throws Exception {
-		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, LEVEL);
+		if (DEBUG) log.openNode("search");
+		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
+		if (DEBUG) log.closeNode();
 		return (byte) (result & 0xF);
 	}
 
@@ -362,36 +405,12 @@ public class Main {
 
 	// Search
 
-	private static boolean DEBUG = false;
-
-	private static String dbg(byte[] a) {
-		StringBuilder sb = new StringBuilder("[");
-		for (int i = 0; i < a.length; i++) {
-			sb.append(a[i]);
-			sb.append(i == a.length - 1 ? "]" : ",");
-		}
-		return sb.toString();
-	}
-
-	private static String dbg(int[] a) {
-		StringBuilder sb = new StringBuilder("[");
-		for (int i = 0; i < a.length; i++) {
-			sb.append(Integer.toHexString(a[i]));
-			sb.append(i == a.length - 1 ? "]" : ",");
-		}
-		return sb.toString();
-	}
-
-	private static String dbg(int i) {
-		return Integer.toHexString(i);
-	}
-
 	private static int white(int alpha, int beta, byte level) throws Exception {
-		if (DEBUG) System.out.println("W" + level + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+		if (DEBUG) log.logNode(WHITE, level, "alpha", dbx(alpha), "beta", dbx(beta));
 		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		int value = value(lowestWhite, lowestBlack);
-		if (DEBUG) System.out.println("W" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
+		if (DEBUG) log.logNode(WHITE, level, "val", dbx(value), "lw", dbg(lowestWhite), "lb", dbg(lowestBlack));
 		// build a sorted work list of moves
 		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
 		for (byte c = 0; c < COLUMNS; c++) {
@@ -403,7 +422,7 @@ public class Main {
 				moves[c] |= r == top[c] ? 0x1000 : 0x100;
 		}
 		Arrays.sort(moves);
-		if (DEBUG) System.out.println("W" + level + " moves=" + dbg(moves));
+		if (DEBUG) log.logNode(WHITE, level, "moves", dbx(moves));
 		byte bestColumn = 0xF;
 		int bestValue = Integer.MIN_VALUE;
 		// go through all legal moves in the sorted list
@@ -416,25 +435,25 @@ public class Main {
 					notSeenHighestRatedLegalMove = false;
 					// shortcut for mate situation
 					if ((move & 0x2000) != 0) {
-						if (DEBUG) System.out.println("W" + level + " mateVal=" + dbg(VAL4) + " mateCol=" + column);
+						if (DEBUG) log.logNode(WHITE, level, "mateVal", dbx(VAL4), "mateCol", dbg(column));
 						return VAL4 | column;
 					}
 					// check if this is a leaf of the search tree
-					if (level <= 0 && move < 0x100) { // no hidden mates
-						if (DEBUG) System.out.println("W" + level + " leafVal=" + dbg(value) + " leafCol=" + column);
+					if (level > LEVEL && move < 0x100) { // no hidden mates
+						if (DEBUG) log.logNode(WHITE, level, "leafVal", dbx(value), "leafCol", dbg(column));
 						return value | column;
 					}
 				}
-				if (level > 0 || move >= 0x100) { // quiescence search
+				if (level <= LEVEL || move >= 0x100) { // quiescence search
 					drop(column, WHITE);
 					byte winner = winner(column);
 					if (winner != SPACE) {
 						revert(column);
-						if (DEBUG) System.out.println("W" + level + " winVal=" + dbg(WINNER_VAL[winner]) + " winCol=" + column);
+						if (DEBUG) log.logNode(WHITE, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
 						return WINNER_VAL[winner] | column;
 					}
-					if (DEBUG) System.out.println("W" + level + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
-					value = black(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
+					if (DEBUG) log.openNode(WHITE, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
+					value = black(alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
 					revert(column);
 					if (value > bestValue) {
 						bestValue = value;
@@ -442,25 +461,26 @@ public class Main {
 					}
 					if (value > alpha)
 						alpha = value;
+					if (DEBUG) log.logNode(WHITE, level, "revert", dbg(column), "value", dbx(value), "bestValue", dbx(bestValue), "bestCol", dbg(bestColumn), "alpha", dbx(alpha), "beta", dbx(beta));
 					if (alpha >= beta) {
-						if (DEBUG) System.out.println("W" + level + " pruning");
+						if (DEBUG) log.logNode(WHITE, level, "pruning", "true");
 						break;
 					}
 				}
 			}
 		}
-		if (DEBUG) System.out.println("W" + level + " bestVal=" + dbg(bestValue) + " bstCol=" + bestColumn);
+		if (DEBUG) log.logNode(WHITE, level, "bestVal", dbx(bestValue), "bstCol", dbg(bestColumn));
 		if (bestColumn == 0xF)
 			throw new Exception();
 		return bestValue | bestColumn;
 	}
 
 	private static int black(int alpha, int beta, byte level) throws Exception {
-		if (DEBUG) System.out.println("B" + level + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
+		if (DEBUG) log.logNode(BLACK, level, "alpha", dbx(alpha), "beta", dbx(beta));
 		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		int value = value(lowestWhite, lowestBlack);
-		if (DEBUG) System.out.println("B" + level + " val=" + dbg(value) + " lw=" + dbg(lowestWhite) + " lb=" + dbg(lowestBlack));
+		if (DEBUG) log.logNode(BLACK, level, "val", dbx(value), "lw", dbg(lowestWhite), "lb", dbg(lowestBlack));
 		// build a sorted work list of moves
 		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
 		for (byte c = 0; c < COLUMNS; c++) {
@@ -472,7 +492,7 @@ public class Main {
 				moves[c] |= r == top[c] ? 0x1000 : 0x100;
 		}
 		Arrays.sort(moves);
-		if (DEBUG) System.out.println("B" + level + " moves=" + dbg(moves));
+		if (DEBUG) log.logNode(BLACK, level, "moves", dbx(moves));
 		byte bestColumn = 0xF;
 		int bestValue = Integer.MAX_VALUE;
 		// go through all legal moves in the sorted list
@@ -485,25 +505,25 @@ public class Main {
 					notSeenHighestRatedLegalMove = false;
 					// shortcut for mate situation
 					if ((move & 0x2000) != 0) {
-						if (DEBUG) System.out.println("B" + level + " mateVal=" + dbg(-VAL4) + " mateCol=" + column);
+						if (DEBUG) log.logNode(BLACK, level, "mateVal", dbx(-VAL4), "mateCol", dbg(column));
 						return -VAL4 | column;
 					}
 					// check if this is a leaf of the search tree
-					if (level <= 0 && move < 0x100) { // no hidden mates
-						if (DEBUG) System.out.println("B" + level + " leafVal=" + dbg(value) + " leafCol=" + column);
+					if (level > LEVEL && move < 0x100) { // no hidden mates
+						if (DEBUG) log.logNode(BLACK, level, "leafVal", dbx(value), "leafCol", dbg(column));
 						return value | column;
 					}
 				}
-				if (level > 0 || move >= 0x100) { // quiescence search
+				if (level <= LEVEL || move >= 0x100) { // quiescence search
 					drop(column, BLACK);
 					byte winner = winner(column);
 					if (winner != SPACE) {
 						revert(column);
-						if (DEBUG) System.out.println("B" + level + " winVal=" + dbg(WINNER_VAL[winner]) + " winCol=" + column);
+						if (DEBUG) log.logNode(BLACK, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
 						return WINNER_VAL[winner] | column;
 					}
-					if (DEBUG) System.out.println("B" + level + " drop column=" + column + " alpha=" + dbg(alpha) + " beta=" + dbg(beta));
-					value = white(alpha, beta, (byte) (level - 1)) & 0xFFFFFFF0;
+					if (DEBUG) log.openNode(BLACK, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
+					value = white(alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
 					revert(column);
 					if (value < bestValue) {
 						bestValue = value;
@@ -511,14 +531,15 @@ public class Main {
 					}
 					if (value < beta)
 						beta = value;
+					if (DEBUG) log.logNode(BLACK, level, "revert", dbg(column), "value", dbx(value), "bestValue", dbx(bestValue), "bestCol", dbg(bestColumn), "alpha", dbx(alpha), "beta", dbx(beta));
 					if (alpha >= beta) {
-						if (DEBUG) System.out.println("B" + level + " pruning");
+						if (DEBUG) log.logNode(BLACK, level, "pruning", "true");
 						break;
 					}
 				}
 			}
 		}
-		if (DEBUG) System.out.println("B" + level + " bestVal=" + dbg(bestValue) + " bstCol=" + bestColumn);
+		if (DEBUG) log.logNode(BLACK, level, "bestVal", dbx(bestValue), "bstCol", dbg(bestColumn));
 		if (bestColumn == 0xF)
 			throw new Exception();
 		return bestValue | bestColumn;

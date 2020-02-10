@@ -138,7 +138,7 @@ public class Main {
 	// User Interaction
 
 	private static void printBoard() {
-		System.out.println("\n  1 2 3 4 5 6 7   ");
+		System.out.println("\n  0 1 2 3 4 5 6   ");
 		for (byte r = ROWS - 1; r >= 0; r--) {
 			StringBuilder line = new StringBuilder();
 			int base = index(r, (byte) -1);
@@ -161,7 +161,7 @@ public class Main {
 
 	private static byte getUserInput(byte color) {
 		System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
-		return (byte) (in.nextByte() - 1);
+		return (byte) in.nextByte() ;
 	}
 
 	// Valuation, specific to a 7x7 board

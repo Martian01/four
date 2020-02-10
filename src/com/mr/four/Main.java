@@ -157,7 +157,8 @@ public class Main {
 	private static byte strategyUser(byte color) throws Exception {
 		if (DEBUG) log.logNode("user");
 		for (;;) {
-			byte column = getUserInput(color);
+			System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
+			byte column = (byte) in.nextByte() ;
 			if (isOption(column))
 				return column;
 			System.out.println("Illegal move. Try again.");
@@ -168,17 +169,21 @@ public class Main {
 		if (DEBUG) log.logNode("random");
 		List<Byte> options = getOptions();
 		double r = Math.random();
-		return options.get((int) (r * r * options.size()));
+		byte column = options.get((int) (r * r * options.size()));
+		System.out.println("Random move for " + (color == WHITE ? "white: " : "black: ") + column);
+		return column;
 	}
 
 	private static byte strategySearch(byte color) throws Exception {
 		if (DEBUG) log.openNode("search");
 		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
 		if (DEBUG) log.closeNode();
-		return (byte) (result & 0xF);
+		byte column = (byte) (result & 0xF);
+		System.out.println("Search result for " + (color == WHITE ? "white: " : "black: ") + column);
+		return column;
 	}
 
-	// User Interaction
+	// Console Output
 
 	private static void printBoard() {
 		System.out.println("\n  0 1 2 3 4 5 6   ");
@@ -200,11 +205,6 @@ public class Main {
 
 	private static void printValue() throws Exception {
 		System.out.println("\nValue: " + value() + "\n");
-	}
-
-	private static byte getUserInput(byte color) {
-		System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
-		return (byte) in.nextByte() ;
 	}
 
 	// Valuation, specific to a 7x7 board
@@ -439,12 +439,12 @@ public class Main {
 						return VAL4 | column;
 					}
 					// check if this is a leaf of the search tree
-					if (level > LEVEL && move < 0x100) { // no hidden mates
+					if (level > LEVEL && move < 0x1000) { // no hidden mates
 						if (DEBUG) log.logNode(WHITE, level, "leafVal", dbx(value), "leafCol", dbg(column));
 						return value | column;
 					}
 				}
-				if (level <= LEVEL || move >= 0x100) { // quiescence search
+				if (level <= LEVEL || move >= 0x1000) { // quiescence search
 					drop(column, WHITE);
 					byte winner = winner(column);
 					if (winner != SPACE) {
@@ -509,12 +509,12 @@ public class Main {
 						return -VAL4 | column;
 					}
 					// check if this is a leaf of the search tree
-					if (level > LEVEL && move < 0x100) { // no hidden mates
+					if (level > LEVEL && move < 0x1000) { // no hidden mates
 						if (DEBUG) log.logNode(BLACK, level, "leafVal", dbx(value), "leafCol", dbg(column));
 						return value | column;
 					}
 				}
-				if (level <= LEVEL || move >= 0x100) { // quiescence search
+				if (level <= LEVEL || move >= 0x1000) { // quiescence search
 					drop(column, BLACK);
 					byte winner = winner(column);
 					if (winner != SPACE) {

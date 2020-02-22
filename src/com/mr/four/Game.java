@@ -39,41 +39,7 @@ public class Game {
 	private static final byte ROWS = 7;
 	private static final byte COLUMNS = 7;
 
-	private static int index(byte row, byte column) {
-		return (COLUMNS + 3) * (row + 3) + column;
-	}
-
-	private static byte[] board = new byte[INITIAL_BOARD.length];
-
-	private static byte[] top = new byte[ZERO_COLUMNS.length];
-
-	private static void drop(byte column, byte color) {
-		board[index(top[column]++, column)] = color;
-	}
-
-	private static void revert(byte column) {
-		board[index(--top[column], column)] = SPACE;
-	}
-
-	private static boolean isOption(byte column) {
-		return column >= 0 && column < COLUMNS && top[column] < ROWS;
-	}
-
-	private static final byte[] COLUMN_SEQUENCE = new byte[] { 3, 2, 4, 1, 5, 0, 6 };
-
-	private List<Byte> getOptions() throws Exception {
-		ArrayList<Byte> options = new ArrayList<>(COLUMNS);
-		for (byte i = 0; i < COLUMNS; i++) {
-			byte c = COLUMN_SEQUENCE[i];
-			if (top[c] < ROWS)
-				options.add(c);
-		}
-		if (options.isEmpty())
-			throw new Exception();
-		return options;
-	}
-
-	// Static definitions for valuation, specific to a 7x7 board
+	// Static definitions for chains, specific to a 7x7 board
 
 	private static final byte[] UL0 = new byte[] { 0, 9, 18, 27 };
 	private static final byte[] UL1 = new byte[] { -9, 0, 9, 18 };
@@ -161,6 +127,8 @@ public class Game {
 			C60, C61, C62, C63, C64, C65, C66
 	};
 
+	// Static definitions for valuation
+
 	private static final int VAL4 = 0x10000000;
 	private static final int VAL3 = 0x100000;
 	private static final int VAL2 = 0x1000;
@@ -168,6 +136,8 @@ public class Game {
 	private static final int VAL0 = 0x0;
 
 	private static final int[] VAL = new int[] { VAL0, VAL1, VAL2, VAL3, VAL4 };
+
+	private static final int[] WINNER_VAL = new int[] { 0, VAL4, -VAL4, 0};
 
 	// Static debug support
 
@@ -232,15 +202,15 @@ public class Game {
 	}
 
 	private void loop() throws Exception {
-		byte player = WHITE;
+		byte color = WHITE;
 		byte winner;
 		do {
 			printBoard();
-			byte column = player == WHITE ? strategyUser(player) : strategySearch(player);
-			drop(column, player);
+			byte column = color == WHITE ? strategyUser(color) : strategySearch(color);
+			drop(column, color);
 			if (log != null) log.logNode("drop", "column" , dbg(column));
 			winner = winner(column);
-			player = opposite(player);
+			color = opposite(color);
 		}
 		while (winner == SPACE);
 		if (log != null) log.logNode("result", "winner" , dbg(winner));
@@ -305,7 +275,43 @@ public class Game {
 		System.out.println("\nValue: " + value() + "\n");
 	}
 
-	// Valuation
+	// Board management
+
+	private int index(byte row, byte column) {
+		return (COLUMNS + 3) * (row + 3) + column;
+	}
+
+	private byte[] board = new byte[INITIAL_BOARD.length];
+
+	private byte[] top = new byte[ZERO_COLUMNS.length];
+
+	private void drop(byte column, byte color) {
+		board[index(top[column]++, column)] = color;
+	}
+
+	private void revert(byte column) {
+		board[index(--top[column], column)] = SPACE;
+	}
+
+	private boolean isOption(byte column) {
+		return column >= 0 && column < COLUMNS && top[column] < ROWS;
+	}
+
+	private final byte[] COLUMN_SEQUENCE = new byte[] { 3, 2, 4, 1, 5, 0, 6 };
+
+	private List<Byte> getOptions() throws Exception {
+		ArrayList<Byte> options = new ArrayList<>(COLUMNS);
+		for (byte i = 0; i < COLUMNS; i++) {
+			byte c = COLUMN_SEQUENCE[i];
+			if (top[c] < ROWS)
+				options.add(c);
+		}
+		if (options.isEmpty())
+			throw new Exception();
+		return options;
+	}
+
+	// Board valuation
 
 	private byte winner(int base, byte[] chain) throws Exception {
 		byte white = 0;
@@ -346,8 +352,6 @@ public class Game {
 			allColumnsFull &= top[c] >= ROWS;
 		return allColumnsFull ? FRAME : SPACE;
 	}
-
-	private final int[] WINNER_VAL = new int[] { 0, VAL4, -VAL4, 0};
 
 	private int value(byte color, int base, byte[] chain) throws Exception {
 		byte num = 0;

@@ -177,7 +177,7 @@ public class Game {
 	public Game(byte maxLevel, Log log) {
 		this.maxLevel = maxLevel;
 		this.log = log;
-   }
+	}
 
 	public void start() {
 		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);

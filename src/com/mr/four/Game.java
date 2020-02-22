@@ -227,6 +227,10 @@ public class Game {
 
 	// Game Loop
 
+	private byte opposite(byte color) {
+		return (byte) (3 - color);
+	}
+
 	private void loop() throws Exception {
 		byte player = WHITE;
 		byte winner;
@@ -236,7 +240,7 @@ public class Game {
 			drop(column, player);
 			if (log != null) log.logNode("drop", "column" , dbg(column));
 			winner = winner(column);
-			player = (byte) (3 - player);
+			player = opposite(player);
 		}
 		while (winner == SPACE);
 		if (log != null) log.logNode("result", "winner" , dbg(winner));
@@ -270,7 +274,7 @@ public class Game {
 
 	private byte strategySearch(byte color) throws Exception {
 		if (log != null) log.openNode("search");
-		long result = color == WHITE ? white(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1) : black(Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
+		long result = search(color, Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
 		if (log != null) log.closeNode();
 		byte column = (byte) (result & 0xF);
 		System.out.println("Search result for " + (color == WHITE ? "white: " : "black: ") + column);
@@ -405,26 +409,26 @@ public class Game {
 
 	// Search
 
-	private int white(int alpha, int beta, byte level) throws Exception {
-		if (log != null) log.logNode(WHITE, level, "alpha", dbx(alpha), "beta", dbx(beta));
+	private int search(byte color, int alpha, int beta, byte level) throws Exception {
+		if (log != null) log.logNode(color, level, "alpha", dbx(alpha), "beta", dbx(beta));
 		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
 		int value = value(lowestWhite, lowestBlack);
-		if (log != null) log.logNode(WHITE, level, "val", dbx(value), "lw", dbg(lowestWhite), "lb", dbg(lowestBlack));
+		if (log != null) log.logNode(color, level, "val", dbx(value), "lw", dbg(lowestWhite), "lb", dbg(lowestBlack));
 		// build a sorted work list of moves
 		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
 		for (byte c = 0; c < COLUMNS; c++) {
-			byte r = lowestWhite[c];
+			byte r = color == WHITE ? lowestWhite[c] : lowestBlack[c];
 			if (r >= 0)
 				moves[c] |= r == top[c] ? 0x2000 : 0x200;
-			r = lowestBlack[c];
+			r = color == WHITE ? lowestBlack[c] : lowestWhite[c];
 			if (r >= 0)
 				moves[c] |= r == top[c] ? 0x1000 : 0x100;
 		}
 		Arrays.sort(moves);
-		if (log != null) log.logNode(WHITE, level, "moves", dbx(moves));
+		if (log != null) log.logNode(color, level, "moves", dbx(moves));
 		byte bestColumn = 0xF;
-		int bestValue = Integer.MIN_VALUE;
+		int bestValue = color == WHITE ? Integer.MIN_VALUE : Integer.MAX_VALUE;
 		// go through all legal moves in the sorted list
 		boolean notSeenHighestRatedLegalMove = true;
 		for (byte i = COLUMNS - 1; i >= 0; i--) { // from highest to lowest rating
@@ -435,111 +439,50 @@ public class Game {
 					notSeenHighestRatedLegalMove = false;
 					// shortcut for mate situation
 					if ((move & 0x2000) != 0) {
-						if (log != null) log.logNode(WHITE, level, "mateVal", dbx(VAL4), "mateCol", dbg(column));
-						return VAL4 | column;
+						if (log != null) log.logNode(color, level, "mateVal", dbx(VAL4), "mateCol", dbg(column));
+						return WINNER_VAL[color] | column;
 					}
 					// check if this is a leaf of the search tree
 					if (level > maxLevel && move < 0x1000) { // no hidden mates
-						if (log != null) log.logNode(WHITE, level, "leafVal", dbx(value), "leafCol", dbg(column));
+						if (log != null) log.logNode(color, level, "leafVal", dbx(value), "leafCol", dbg(column));
 						return value | column;
 					}
 				}
-				if (level <= maxLevel || move >= 0x1000) { // quiescence search
-					drop(column, WHITE);
+				if (level <= maxLevel || move >= 0x1000) { // normal search or quiescence search
+					drop(column, color);
 					byte winner = winner(column);
 					if (winner != SPACE) {
 						revert(column);
-						if (log != null) log.logNode(WHITE, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
+						if (log != null) log.logNode(color, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
 						return WINNER_VAL[winner] | column;
 					}
-					if (log != null) log.openNode(WHITE, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
-					value = black(alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
+					if (log != null) log.openNode(color, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
+					value = search(opposite(color) , alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
 					revert(column);
-					if (value > bestValue) {
-						bestValue = value;
-						bestColumn = column;
+					if (color == WHITE) {
+						if (value > bestValue) {
+							bestValue = value;
+							bestColumn = column;
+						}
+						if (value > alpha)
+							alpha = value;
+					} else {
+						if (value < bestValue) {
+							bestValue = value;
+							bestColumn = column;
+						}
+						if (value < beta)
+							beta = value;
 					}
-					if (value > alpha)
-						alpha = value;
-					if (log != null) log.logNode(WHITE, level, "revert", dbg(column), "value", dbx(value), "bestValue", dbx(bestValue), "bestCol", dbg(bestColumn), "alpha", dbx(alpha), "beta", dbx(beta));
+					if (log != null) log.logNode(color, level, "revert", dbg(column), "value", dbx(value), "bestValue", dbx(bestValue), "bestCol", dbg(bestColumn), "alpha", dbx(alpha), "beta", dbx(beta));
 					if (alpha >= beta) {
-						if (log != null) log.logNode(WHITE, level, "pruning", "true");
+						if (log != null) log.logNode(color, level, "pruning", "true");
 						break;
 					}
 				}
 			}
 		}
-		if (log != null) log.logNode(WHITE, level, "bestVal", dbx(bestValue), "bstCol", dbg(bestColumn));
-		if (bestColumn == 0xF)
-			throw new Exception();
-		return bestValue | bestColumn;
-	}
-
-	private int black(int alpha, int beta, byte level) throws Exception {
-		if (log != null) log.logNode(BLACK, level, "alpha", dbx(alpha), "beta", dbx(beta));
-		byte[] lowestWhite = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
-		byte[] lowestBlack = new byte[] { -1, -1, -1, -1, -1, -1, -1 };
-		int value = value(lowestWhite, lowestBlack);
-		if (log != null) log.logNode(BLACK, level, "val", dbx(value), "lw", dbg(lowestWhite), "lb", dbg(lowestBlack));
-		// build a sorted work list of moves
-		int[] moves = new int[] { 0x00, 0x11, 0x22, 0x33, 0x24, 0x15, 0x06}; // low nybble equals column index
-		for (byte c = 0; c < COLUMNS; c++) {
-			byte r = lowestBlack[c];
-			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x2000 : 0x200;
-			r = lowestWhite[c];
-			if (r >= 0)
-				moves[c] |= r == top[c] ? 0x1000 : 0x100;
-		}
-		Arrays.sort(moves);
-		if (log != null) log.logNode(BLACK, level, "moves", dbx(moves));
-		byte bestColumn = 0xF;
-		int bestValue = Integer.MAX_VALUE;
-		// go through all legal moves in the sorted list
-		boolean notSeenHighestRatedLegalMove = true;
-		for (byte i = COLUMNS - 1; i >= 0; i--) { // from highest to lowest rating
-			int move = moves[i];
-			byte column = (byte) (move & 0xF);
-			if (top[column] < ROWS) { // legal move
-				if (notSeenHighestRatedLegalMove) {
-					notSeenHighestRatedLegalMove = false;
-					// shortcut for mate situation
-					if ((move & 0x2000) != 0) {
-						if (log != null) log.logNode(BLACK, level, "mateVal", dbx(-VAL4), "mateCol", dbg(column));
-						return -VAL4 | column;
-					}
-					// check if this is a leaf of the search tree
-					if (level > maxLevel && move < 0x1000) { // no hidden mates
-						if (log != null) log.logNode(BLACK, level, "leafVal", dbx(value), "leafCol", dbg(column));
-						return value | column;
-					}
-				}
-				if (level <= maxLevel || move >= 0x1000) { // quiescence search
-					drop(column, BLACK);
-					byte winner = winner(column);
-					if (winner != SPACE) {
-						revert(column);
-						if (log != null) log.logNode(BLACK, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
-						return WINNER_VAL[winner] | column;
-					}
-					if (log != null) log.openNode(BLACK, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
-					value = white(alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
-					revert(column);
-					if (value < bestValue) {
-						bestValue = value;
-						bestColumn = column;
-					}
-					if (value < beta)
-						beta = value;
-					if (log != null) log.logNode(BLACK, level, "revert", dbg(column), "value", dbx(value), "bestValue", dbx(bestValue), "bestCol", dbg(bestColumn), "alpha", dbx(alpha), "beta", dbx(beta));
-					if (alpha >= beta) {
-						if (log != null) log.logNode(BLACK, level, "pruning", "true");
-						break;
-					}
-				}
-			}
-		}
-		if (log != null) log.logNode(BLACK, level, "bestVal", dbx(bestValue), "bstCol", dbg(bestColumn));
+		if (log != null) log.logNode(color, level, "bestVal", dbx(bestValue), "bstCol", dbg(bestColumn));
 		if (bestColumn == 0xF)
 			throw new Exception();
 		return bestValue | bestColumn;

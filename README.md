@@ -23,3 +23,5 @@ You create the trace by starting the game with the command line option `debug`, 
 The game will create a log file named `debug001.xml` or similar. You can then load the xml file into an XML editor of your choice, and click yourself deeper into the search tree in places you want to understand better.
 
 One good choice of an XML editor is [XML mind](https://www.xmlmind.com/xmleditor/).
+
+Note: the debug file will be created in the current working directory.

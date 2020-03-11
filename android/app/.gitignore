@@ -2,11 +2,7 @@
 /*
 # except the following
 !/.gitignore
-!/README.md
-!/LICENSE
-!/COPYRIGHT
-!/Manifest.txt
-!/build.sh
-!/four.jar
 !/src/
-!/android/
+!/keystores/
+!/build.gradle
+!/proguard-rules.pro

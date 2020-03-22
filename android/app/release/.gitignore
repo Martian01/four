@@ -2,8 +2,4 @@
 /*
 # except the following
 !/.gitignore
-!/src/
-!/keystores/
-!/build.gradle
-!/proguard-rules.pro
-!/release/
+!/app-release.apk

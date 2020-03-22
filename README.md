@@ -41,7 +41,7 @@ We have added a simple Android app to this repository. You find the source code 
 
 For those just wanting to play we provide the ready-built [APK file](android/app/release/app-release.apk). Simply copy it to your device and "open" it to install it.
 
-![App Logo](ic_launcher-playstore.png)
+![App Logo](android/app/src/main/res/mipmap-hdpi/ic_launcher.png)
 
 We are currently in the process of bringing the app into Google Play as well, to make installation even easier.
 

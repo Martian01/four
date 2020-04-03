@@ -1,0 +1,10 @@
+<resources>
+	<string name="app_name">"Vier"</string>
+	<string name="label.level">"Aktueller Level:"</string>
+	<string name="msg.turn">"Du bist dran!\nTippe auf eine Spalte, um einen Stein fallen zu lassen"</string>
+	<string name="msg.won">"Du hast gewonnen!\nTippe hier, um ein neues Spiel zu starten"</string>
+	<string name="msg.lost">"Du hast verloren!\nTippe hier, um ein neues Spiel zu starten"</string>
+	<string name="msg.draw">"Unentschieden!\nTippe hier, um ein neues Spiel zu starten"</string>
+	<string name="msg.welcome">"Willkommen!\nTippe hier, um ein neues Spiel zu starten"</string>
+	<string name="msg.error">"Fehler!\nTippe hier, um ein neues Spiel zu starten"</string>
+</resources>

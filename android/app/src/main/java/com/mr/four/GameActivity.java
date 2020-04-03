@@ -1,5 +1,6 @@
 package com.mr.four;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.*;
 
@@ -17,7 +18,7 @@ import android.widget.*;
 
 import java.util.*;
 
-public class GameActivity extends AppCompatActivity implements Runnable, Animation.AnimationListener {
+public class GameActivity extends AppCompatActivity implements Runnable {
 
 	private final String PREF_LEVEL = "PrefLevel";
 	private byte maxLevel;
@@ -33,6 +34,9 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 	private ArrayAdapter<Integer> levelAdapter;
 	private TextView messageView;
 	private View busyIndicator;
+	private View playingField;
+	private View levelUpNotificationView;
+	private TextView levelUpValueView;
 	private final ImageView[][] images = new ImageView[7][7];
 
 	private final Drawable[] drawables = new Drawable[3];
@@ -55,6 +59,9 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 		levelSpinner = findViewById(R.id.level);
 		messageView = findViewById(R.id.message);
 		busyIndicator = findViewById(R.id.busy);
+		playingField = findViewById(R.id.playingField);
+		levelUpNotificationView = findViewById(R.id.levelUpNotification);
+		levelUpValueView = findViewById(R.id.levelUpValue);
 		ViewGroup box = findViewById(R.id.box);
 		for (int row = 0; row < 7; row++) {
 			ViewGroup rowView = (ViewGroup) box.getChildAt(6 - row);
@@ -75,7 +82,6 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 		mpLevelUp1 = MediaPlayer.create(this, R.raw.level_up_1);
 		loadLevel();
 		game.maxLevel = currentLevel;
-		//levelAdapter = new ArrayAdapter<Integer>(this, android.R.layout.simple_spinner_item);
 		levelAdapter = new ArrayAdapter<Integer>(this, R.layout.spinner_item, R.id.spinnerItem);
 		for (int i = 1 ; i <= maxLevel; i++)
 			levelAdapter.add(i);
@@ -126,46 +132,49 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 		if (gameState == Game.RUNNING && color == computerPlayer) {
 			messageView.setVisibility(View.INVISIBLE);
 			busyIndicator.setVisibility(View.VISIBLE);
-		} else {
+		} else if (canDrop) {
 			messageView.setText(messageText[gameState]);
 			messageView.setVisibility(View.VISIBLE);
+			busyIndicator.setVisibility(View.INVISIBLE);
+		} else {
+			messageView.setVisibility(View.INVISIBLE);
 			busyIndicator.setVisibility(View.INVISIBLE);
 		}
 	}
 
-	private void nextMove(byte column) {
+	private void executeMove(byte column) {
 		drop(color, column, game.getTop(column));
 		game.drop(column, color);
 		gameState = winner(column);
 		switch (gameState) {
 			case Game.RUNNING:
 				color = Game.opposite(color);
-				setMessage();
 				if (color == computerPlayer)
 					new SearchTask().execute();
 				break;
 			case Game.WHITE:
+			case Game.BLACK:
 				messageView.postDelayed(this, 750);
-				setMessage();
-				if (currentLevel >= maxLevel) {
+				if (color == computerPlayer)
+					mpLost.start();
+				else if (currentLevel < maxLevel)
+					mpWon.start();
+				else {
 					(currentLevel % 2 == 0 ? mpLevelUp0 : mpLevelUp1).start();
 					game.maxLevel = currentLevel = ++maxLevel;
 					saveLevel();
 					levelAdapter.add((int) maxLevel);
 					levelAdapter.notifyDataSetChanged();
 					levelSpinner.setSelection(currentLevel - 1);
-					// TODO: Level up animation
-				} else
-					mpWon.start();
-				break;
-			case Game.BLACK:
-				messageView.postDelayed(this, 750);
-				setMessage();
-				mpLost.start();
+					levelUpValueView.setText(String.valueOf(maxLevel));
+					levelUpNotificationView.setVisibility(View.VISIBLE);
+					levelUpNotificationView.setAnimation(getGrowAnimation());
+					playingField.setAnimation(getFadeOutAnimation());
+				}
 				break;
 			default:
-				setMessage();
 		}
+		setMessage();
 	}
 
 	private byte winner(byte column) {
@@ -202,8 +211,61 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 				images[row][column].setAlpha(1F);
 				images[row][column].setImageDrawable(null);
 			}
-		// TODO: any effects?
 	}
+
+	private Animation getFadeOutAnimation() {
+		AlphaAnimation fadeOutAnimation = new AlphaAnimation(1f, 0f);
+		fadeOutAnimation.setDuration(4000);
+		fadeOutAnimation.setRepeatMode(Animation.REVERSE);
+		fadeOutAnimation.setRepeatCount(1);
+		return fadeOutAnimation;
+	}
+
+	private Animation.AnimationListener growAnimationListener = new Animation.AnimationListener() {
+		@Override
+		public void onAnimationStart(Animation animation) { }
+		@Override
+		public void onAnimationEnd(Animation animation) {
+			synchronized (drops) {
+				levelUpNotificationView.setVisibility(View.GONE);
+			}
+		}
+		@Override
+		public void onAnimationRepeat(Animation animation) { }
+	};
+
+	private Animation getGrowAnimation() {
+		AlphaAnimation fadeInAnimation = new AlphaAnimation(0f, 1f);
+		fadeInAnimation.setDuration(4000);
+		fadeInAnimation.setRepeatMode(Animation.REVERSE);
+		fadeInAnimation.setRepeatCount(1);
+		ScaleAnimation growAnimation = new ScaleAnimation(0f, 1.8f, 0f, 1.8f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+		growAnimation.setDuration(8000);
+		growAnimation.setInterpolator(new AccelerateInterpolator(8f));
+		AnimationSet animationSet = new AnimationSet(true);
+		animationSet.addAnimation(fadeInAnimation);
+		animationSet.addAnimation(growAnimation);
+		animationSet.setAnimationListener(growAnimationListener);
+		return animationSet;
+	}
+
+	private Animation.AnimationListener fallAnimationListener = new Animation.AnimationListener() {
+		@Override
+		public void onAnimationStart(Animation animation) { }
+		@Override
+		public void onAnimationEnd(Animation animation) {
+			synchronized (drops) {
+				Integer stone = drops.poll();
+				if (stone == null) {
+					canDrop = true;
+					setMessage();
+				} else
+					drop(stone);
+			}
+		}
+		@Override
+		public void onAnimationRepeat(Animation animation) { }
+	};
 
 	private Animation getFallAnimation(int row) {
 		float deltaPixels = (6 - row) * 36 * displayMetrics.density;
@@ -216,6 +278,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.addAnimation(fadeInAnimation);
 		animationSet.addAnimation(fallAnimation);
+		animationSet.setAnimationListener(fallAnimationListener);
 		return animationSet;
 	}
 
@@ -223,41 +286,25 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 
 	private boolean canDrop = true;
 
-	@Override
-	public void onAnimationStart(Animation animation) { }
-
-	@Override
-	public void onAnimationEnd(Animation animation) {
-		synchronized (drops) {
-			canDrop = true;
-			dropNext(drops.poll());
-		}
-	}
-
-	@Override
-	public void onAnimationRepeat(Animation animation) { }
-
-	private void dropNext(Integer stone) {
-		if (stone == null)
-			return;
-		if (canDrop) {
-			canDrop = false;
+	private void drop(@NonNull Integer stone) {
 			byte color = (byte) (stone >> 16);
 			byte column = (byte) ((stone >> 8) & 0xff);
 			byte row = (byte) (stone & 0xff);
 			ImageView image = images[row][column];
 			image.setImageDrawable(drawables[color]);
 			image.setColorFilter(colors[color]);
-			Animation fallAnimation = getFallAnimation(row);
-			fallAnimation.setAnimationListener(this);
-			image.startAnimation(fallAnimation);
-		} else
-			drops.offer(stone);
+			image.startAnimation(getFallAnimation(row));
 	}
 
 	private void drop(byte color, byte column, byte row) {
 		synchronized (drops) {
-			dropNext((color << 16) | (column << 8) | row);
+			Integer stone = (color << 16) | (column << 8) | row;
+			if (canDrop) {
+				canDrop = false;
+				setMessage();
+				drop(stone);
+			} else
+				drops.offer(stone);
 		}
 	}
 
@@ -265,7 +312,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 		if (gameState == 4)
 			startGame();
 		if (gameState == Game.RUNNING && color != computerPlayer && game.isOption(column))
-			nextMove(column);
+			executeMove(column);
 	}
 
 	public void tryColumn0(View v) {
@@ -331,7 +378,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, Animati
 				gameState = 5;
 				setMessage();
 			} else
-				nextMove(result);
+				executeMove(result);
 		}
 	}
 }

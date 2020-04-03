@@ -1,5 +1,6 @@
 <resources>
 	<string name="app_name">"Vier"</string>
+	<string name="title.level">"LEVEL"</string>
 	<string name="label.level">"Aktueller Level:"</string>
 	<string name="msg.turn">"Du bist dran!\nTippe auf eine Spalte, um einen Stein fallen zu lassen"</string>
 	<string name="msg.won">"Du hast gewonnen!\nTippe hier, um ein neues Spiel zu starten"</string>

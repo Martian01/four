@@ -50,3 +50,8 @@ The mobile app has a [data privacy statement](android/DataProtection.md).
 ### Localisation
 
 We are open to including more languages into the app. Please send us a pull request, or a translated [strings.xml](android/app/src/main/res/values/strings.xml) file.
+
+### Cheating
+
+Yes, we are aware there is a way to cheat. But you wouldn't do that, would you. xD
+

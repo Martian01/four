@@ -37,13 +37,13 @@ However, playing on a mobile device is even more fun, with a better user experie
 ![Light](four_light.png)
 ![Dark](four_dark.png)
 
-We have added a simple Android app to this repository. You find the source code in the subdirectory `android`. You can simply add this directory as a new project in Android Studio, or whichever development environment you prefer. This way you can install it on your device or an emulator, modify the source code, debug it, etc.
-
-For those just wanting to play we provide the ready-built [APK file](android/app/release/app-release.apk). Simply copy it to your device and "open" it to install it.
+We have added a simple Android app to this repository. You find the source code in the subdirectory `android`. You can add this directory as a new project in Android Studio, or whichever development environment you prefer. This way you can install it on your device or an emulator, modify the source code, debug it, etc.
 
 ![App Logo](android/app/src/main/res/mipmap-hdpi/ic_launcher.png)
 
-We are currently in the process of bringing the app into Google Play as well, to make installation even easier.
+For those just wanting to play, the app is available on [Google Play](https://play.google.com/store/apps/details?id=com.mr.four).
+
+For those without access to Google Play we provide the [release build](android/app/release/app-release.apk) in this repository. Simply copy it to your device and "open" it to install it.
 
 The mobile app has a [data privacy statement](android/DataProtection.md).
 

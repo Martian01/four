@@ -1,11 +1,13 @@
 package com.mr.four;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.*;
 
 import android.animation.*;
 import android.annotation.*;
+import android.app.*;
 import android.content.*;
 import android.graphics.drawable.*;
 import android.media.*;
@@ -18,11 +20,10 @@ import android.widget.*;
 
 import java.util.*;
 
-public class GameActivity extends AppCompatActivity implements Runnable {
+public class GameActivity extends AppCompatActivity implements Runnable, DialogInterface.OnClickListener {
 
 	private final String PREF_LEVEL = "PrefLevel";
-	private byte maxLevel;
-	private byte currentLevel;
+	private byte achievementLevel;
 
 	private final Game game = new Game();
 
@@ -31,7 +32,8 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 	private byte computerPlayer;
 
 	private Spinner levelSpinner;
-	private ArrayAdapter<Integer> levelAdapter;
+	private String levelTitle;
+	private ArrayAdapter<String> levelAdapter;
 	private TextView messageView;
 	private View busyIndicator;
 	private View playingField;
@@ -81,16 +83,16 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 		mpLevelUp0 = MediaPlayer.create(this, R.raw.level_up_0);
 		mpLevelUp1 = MediaPlayer.create(this, R.raw.level_up_1);
 		loadLevel();
-		game.maxLevel = currentLevel;
-		levelAdapter = new ArrayAdapter<Integer>(this, R.layout.spinner_item, R.id.spinnerItem);
-		for (int i = 1 ; i <= maxLevel; i++)
-			levelAdapter.add(i);
+		levelTitle = getString(R.string.title_level);
+		levelAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, R.id.spinnerItem);
+		for (int i = 1; i <= achievementLevel; i++)
+			levelAdapter.add(levelTitle + " " + i);
 		levelSpinner.setAdapter(levelAdapter);
-		levelSpinner.setSelection(currentLevel - 1);
+		levelSpinner.setSelection(game.maxLevel - 1);
 		levelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-				game.maxLevel = currentLevel = (byte) (position + 1);
+				game.maxLevel = (byte) (position + 1);
 				saveLevel();
 			}
 			@Override
@@ -103,19 +105,61 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 		setMessage();
 	}
 
+	/*@Override
+	public void onConfigurationChanged(@NonNull Configuration configuration) {
+		super.onConfigurationChanged(configuration);
+	}*/
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.menu_game, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu (Menu menu) {
+		menu.getItem(0).setVisible(achievementLevel > 1);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if (item.getItemId() == R.id.action_reset) {
+			new AlertDialog.Builder(this)
+					.setTitle(R.string.menu_reset)
+					.setIcon(android.R.drawable.ic_dialog_alert)
+					.setPositiveButton(android.R.string.yes, this)
+					.setMessage(R.string.query_reset)
+					.setCancelable(true)
+					.show();
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public void onClick(DialogInterface dialog, int which) {
+		game.maxLevel = achievementLevel = 1;
+		saveLevel();
+		levelAdapter.clear();
+		levelAdapter.add(levelTitle + " 1");
+		levelAdapter.notifyDataSetChanged();
+		levelSpinner.setSelection(0);
+		invalidateOptionsMenu();
+	}
+
 	private void loadLevel() {
 		int packedLevel = PreferenceManager.getDefaultSharedPreferences(this).getInt(PREF_LEVEL, 0);
-		maxLevel = (byte) (packedLevel >> 8);
-		currentLevel = (byte) (packedLevel & 0xff);
-		if (maxLevel < 1)
-			maxLevel = 1;
-		if (currentLevel > maxLevel)
-			currentLevel = maxLevel;
+		achievementLevel = (byte) (packedLevel >> 8);
+		game.maxLevel = (byte) (packedLevel & 0xff);
+		if (achievementLevel < 1)
+			achievementLevel = 1;
+		if (game.maxLevel > achievementLevel)
+			game.maxLevel = achievementLevel;
 	}
 
 	private void saveLevel() {
 		SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
-		editor.putInt(PREF_LEVEL, (maxLevel << 8) | currentLevel);
+		editor.putInt(PREF_LEVEL, (achievementLevel << 8) | game.maxLevel);
 		editor.apply();
 	}
 
@@ -157,16 +201,11 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 				messageView.postDelayed(this, 750);
 				if (color == computerPlayer)
 					mpLost.start();
-				else if (currentLevel < maxLevel)
+				else if (game.maxLevel < achievementLevel)
 					mpWon.start();
 				else {
-					(currentLevel % 2 == 0 ? mpLevelUp0 : mpLevelUp1).start();
-					game.maxLevel = currentLevel = ++maxLevel;
-					saveLevel();
-					levelAdapter.add((int) maxLevel);
-					levelAdapter.notifyDataSetChanged();
-					levelSpinner.setSelection(currentLevel - 1);
-					levelUpValueView.setText(String.valueOf(maxLevel));
+					(game.maxLevel % 2 == 0 ? mpLevelUp0 : mpLevelUp1).start();
+					levelUpValueView.setText(String.valueOf(achievementLevel + 1));
 					levelUpNotificationView.setVisibility(View.VISIBLE);
 					levelUpNotificationView.setAnimation(getGrowAnimation());
 					playingField.setAnimation(getFadeOutAnimation());
@@ -226,9 +265,13 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 		public void onAnimationStart(Animation animation) { }
 		@Override
 		public void onAnimationEnd(Animation animation) {
-			synchronized (drops) {
-				levelUpNotificationView.setVisibility(View.GONE);
-			}
+			game.maxLevel = ++achievementLevel;
+			saveLevel();
+			invalidateOptionsMenu();
+			levelUpNotificationView.setVisibility(View.GONE);
+			levelAdapter.add(levelTitle + " " + achievementLevel);
+			levelAdapter.notifyDataSetChanged();
+			levelSpinner.setSelection(game.maxLevel - 1);
 		}
 		@Override
 		public void onAnimationRepeat(Animation animation) { }
@@ -364,16 +407,17 @@ public class GameActivity extends AppCompatActivity implements Runnable {
 		}
 	}
 
+	@SuppressLint("StaticFieldLeak")
 	private class SearchTask extends AsyncTask<Void, Void, Byte> {
 		@Override
 		protected Byte doInBackground(Void... voids) {
 			try {
-				return game.search(Game.BLACK);
+				return game.search(computerPlayer);
 			} catch (Exception ignored) { }
 			return null;
 		}
 		@Override
-		protected void onPostExecute(Byte result) {
+		protected void onPostExecute(@Nullable Byte result) {
 			if (result == null) {
 				gameState = 5;
 				setMessage();

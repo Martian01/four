@@ -9,58 +9,58 @@
 		android:clipChildren="false"
 		>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn0"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/cross"
 			tools:tint="@color/m"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn1"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/naught"
 			tools:tint="@color/f"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn2"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/cross"
 			tools:tint="@color/m"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn3"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/naught"
 			tools:tint="@color/f"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn4"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/cross"
 			tools:tint="@color/m"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn5"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/naught"
 			tools:tint="@color/f"
 			/>
 		<ImageView
-			android:layout_width="24dp"
-			android:layout_height="24dp"
+			android:layout_width="28dp"
+			android:layout_height="28dp"
 			android:onClick="tryColumn6"
-			android:layout_margin="3dp"
+			android:layout_margin="4dp"
 			tools:src="@drawable/cross"
 			tools:tint="@color/m"
 			/>

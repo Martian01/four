@@ -23,7 +23,7 @@
 
 		<RelativeLayout
 			android:layout_width="match_parent"
-			android:layout_height="60dp"
+			android:layout_height="80dp"
 			android:background="@color/panel"
 			>
 			<Spinner
@@ -46,8 +46,8 @@
 		<RelativeLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:paddingTop="32dp"
-			android:paddingBottom="16dp"
+			android:paddingTop="40dp"
+			android:paddingBottom="20dp"
 			android:background="@color/panel"
 			android:clipChildren="false"
 			>
@@ -57,23 +57,23 @@
 				android:layout_height="wrap_content"
 				android:layout_centerHorizontal="true"
 				android:background="@color/frame"
-				android:paddingStart="3dp"
-				android:paddingEnd="3dp"
-				android:paddingBottom="3dp"
+				android:paddingStart="4dp"
+				android:paddingEnd="4dp"
+				android:paddingBottom="4dp"
 				android:clipChildren="false"
 				>
 				<RelativeLayout
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:background="@color/panel"
-					android:paddingStart="3dp"
-					android:paddingEnd="3dp"
-					android:paddingBottom="3dp"
+					android:paddingStart="4dp"
+					android:paddingEnd="4dp"
+					android:paddingBottom="4dp"
 					android:clipChildren="false"
 					>
 					<ImageView
-						android:layout_width="210dp"
-						android:layout_height="210dp"
+						android:layout_width="252dp"
+						android:layout_height="252dp"
 						android:src="@drawable/box_bg"
 						android:tint="@color/space"
 						/>
@@ -90,7 +90,7 @@
 
 		<RelativeLayout
 			android:layout_width="match_parent"
-			android:layout_height="60dp"
+			android:layout_height="80dp"
 			android:orientation="vertical"
 			android:background="@color/panel"
 			android:onClick="click"
@@ -108,8 +108,8 @@
 				/>
 			<ProgressBar
 				android:id="@+id/busy"
-				android:layout_width="48dp"
-				android:layout_height="48dp"
+				android:layout_width="60dp"
+				android:layout_height="60dp"
 				android:layout_centerInParent="true"
 				android:visibility="invisible"
 				/>
@@ -136,7 +136,7 @@
 			android:layout_height="wrap_content"
 			android:text="@string/title.level"
 			android:textAppearance="?android:attr/textAppearanceMedium"
-			android:textSize="60dp"
+			android:textSize="80dp"
 			android:textColor="@color/frame"
 			android:fontFamily="@font/gearheadscan"
 			android:layout_gravity="center_horizontal"
@@ -147,7 +147,7 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:textAppearance="?android:attr/textAppearanceMedium"
-			android:textSize="90dp"
+			android:textSize="120dp"
 			android:textColor="@color/frame"
 			android:fontFamily="@font/gearheadscan"
 			android:layout_gravity="center_horizontal"

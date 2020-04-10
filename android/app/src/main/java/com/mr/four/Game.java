@@ -297,7 +297,7 @@ public class Game {
 
 	private int winValue(byte winner, byte level) {
 		int value = WINNER_VAL[winner];
-		return value < 0 ? value + level : (value > 0 ? value - level : value);
+		return value < 0 ? value + (level << 4) : (value > 0 ? value - (level << 4) : value);
 	}
 
 	// Search

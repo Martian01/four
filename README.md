@@ -55,3 +55,14 @@ We are open to including more languages into the app. Please send us a pull requ
 
 Yes, we are aware there is a way to cheat. But you wouldn't do that, would you. xD
 
+### Shareware Attributions
+
+The app uses the following fonts and soundclips:
+
+Resource | License Statement
+------------ | -------------
+[https://www.1001freefonts.com/gear-head.font](https://www.1001freefonts.com/gear-head.font) | "My fonts are free for noncommercial use and are donationware for commercial purposes."
+[https://freesound.org/people/benjaminharveydesign/sounds/350428/](https://freesound.org/people/benjaminharveydesign/sounds/350428/) | [CC0 1.0 Universal (CC0 1.0)](https://creativecommons.org/publicdomain/zero/1.0/)
+[https://freesound.org/people/primordiality/sounds/78824/](https://freesound.org/people/primordiality/sounds/78824/) | [Attribution 3.0 Unported (CC BY 3.0)](https://creativecommons.org/licenses/by/3.0/)
+[https://freesound.org/people/rhodesmas/sounds/320657/](https://freesound.org/people/rhodesmas/sounds/320657/) | [Attribution 3.0 Unported (CC BY 3.0)](https://creativecommons.org/licenses/by/3.0/)
+[https://freesound.org/people/Robinhood76/sounds/98874/](https://freesound.org/people/Robinhood76/sounds/98874/) | [Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0)](https://creativecommons.org/licenses/by-nc/3.0/)

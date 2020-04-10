@@ -47,6 +47,7 @@ public class Main {
 			if (log != null) log.logNode("drop", "column" , Byte.toString(column));
 			winner = game.winner(column);
 			color = Game.opposite(color);
+			//game.printValue();
 		}
 		while (winner == Game.SPACE);
 		if (log != null) log.logNode("result", "winner" , Byte.toString(winner));

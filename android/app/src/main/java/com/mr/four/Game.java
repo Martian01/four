@@ -295,6 +295,11 @@ public class Game {
 		return value;
 	}
 
+	private int winValue(byte winner, byte level) {
+		int value = WINNER_VAL[winner];
+		return value < 0 ? value + level : (value > 0 ? value - level : value);
+	}
+
 	// Search
 
 	private int search(byte color, int alpha, int beta, byte level) throws Exception {
@@ -324,7 +329,7 @@ public class Game {
 					notSeenHighestRatedLegalMove = false;
 					// shortcut for mate situation
 					if ((move & 0x2000) != 0) {
-						return WINNER_VAL[color] | column;
+						return winValue(color, level) | column;
 					}
 					// check if this is a leaf of the search tree
 					if (level > maxLevel && move < 0x1000) { // no hidden mates
@@ -336,7 +341,7 @@ public class Game {
 					byte winner = winner(column);
 					if (winner != RUNNING) {
 						revert(column);
-						return WINNER_VAL[winner] | column;
+						return winValue(winner, level) | column;
 					}
 					value = search(opposite(color) , alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;
 					revert(column);

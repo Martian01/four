@@ -194,7 +194,7 @@ public class Game {
 	}
 
 	public void printValue() throws Exception {
-		System.out.println("\nValue: " + value() + "\n");
+		System.out.println("\nValue: " + dbx(value()) + "\n");
 	}
 
 	// Instance variables and methods
@@ -351,6 +351,11 @@ public class Game {
 		return value;
 	}
 
+	private int winValue(byte winner, byte level) {
+		int value = WINNER_VAL[winner];
+		return value < 0 ? value + level : (value > 0 ? value - level : value);
+	}
+
 	// Search
 
 	private int search(byte color, int alpha, int beta, byte level) throws Exception {
@@ -383,8 +388,8 @@ public class Game {
 					notSeenHighestRatedLegalMove = false;
 					// shortcut for mate situation
 					if ((move & 0x2000) != 0) {
-						if (log != null) log.logNode(color, level, "mateVal", dbx(VAL4), "mateCol", dbg(column));
-						return WINNER_VAL[color] | column;
+						if (log != null) log.logNode(color, level, "mateVal", dbx(winValue(color, level)), "mateCol", dbg(column));
+						return winValue(color, level) | column;
 					}
 					// check if this is a leaf of the search tree
 					if (level > maxLevel && move < 0x1000) { // no hidden mates
@@ -397,8 +402,8 @@ public class Game {
 					byte winner = winner(column);
 					if (winner != RUNNING) {
 						revert(column);
-						if (log != null) log.logNode(color, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
-						return WINNER_VAL[winner] | column;
+						if (log != null) log.logNode(color, level, "winVal", dbx(winValue(winner, level)), "winCol", dbg(column));
+						return winValue(winner, level) | column;
 					}
 					if (log != null) log.openNode(color, level, "drop", dbg(column), "alpha", dbx(alpha), "beta", dbx(beta));
 					value = search(opposite(color) , alpha, beta, (byte) (level + 1)) & 0xFFFFFFF0;

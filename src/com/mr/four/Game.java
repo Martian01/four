@@ -1,22 +1,24 @@
 package com.mr.four;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Game {
-
-	public static final Scanner in = new Scanner(System.in);
 
 	// Static board definition
 
 	// Note: we prefer 7x7 to the more common 6x7 as it offers better Zugzwang opportunities
 
-	private static final byte SPACE = 0;
-	private static final byte WHITE = 1;
-	private static final byte BLACK = 2;
+	public static final byte SPACE = 0;
+	public static final byte WHITE = 1;
+	public static final byte BLACK = 2;
 	private static final byte FRAME = 3;
+
+	public static final byte RUNNING = 0;
+	public static final byte DRAW = 3;
+
+	public static byte opposite(byte color) {
+		return (byte) (3 - color);
+	}
 
 	private static final byte[] INITIAL_BOARD = new byte[] {
 			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
@@ -139,7 +141,7 @@ public class Game {
 
 	private static final int[] WINNER_VAL = new int[] { 0, VAL4, -VAL4, 0};
 
-	// Static debug support
+	// Static debug support for console version
 
 	private static String dbg(byte[] a) {
 		StringBuilder sb = new StringBuilder();
@@ -169,91 +171,11 @@ public class Game {
 		return Integer.toHexString(i);
 	}
 
-	// Instance variables and methods
+	// Instance variables and methods for console version
 
-	private final byte maxLevel;
-	private final Log log;
+	public Log log;
 
-	public Game(byte maxLevel, Log log) {
-		this.maxLevel = maxLevel;
-		this.log = log;
-	}
-
-	public void start() {
-		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);
-		System.arraycopy(ZERO_COLUMNS, 0, top, 0, ZERO_COLUMNS.length);
-		try {
-			if (log != null) {
-				log.openFile();
-				log.openNode("match");
-			}
-			loop();
-			if (log != null)
-				log.closeFile();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	// Game Loop
-
-	private byte opposite(byte color) {
-		return (byte) (3 - color);
-	}
-
-	private void loop() throws Exception {
-		byte color = WHITE;
-		byte winner;
-		do {
-			printBoard();
-			byte column = color == WHITE ? strategyUser(color) : strategySearch(color);
-			drop(column, color);
-			if (log != null) log.logNode("drop", "column" , dbg(column));
-			winner = winner(column);
-			color = opposite(color);
-		}
-		while (winner == SPACE);
-		if (log != null) log.logNode("result", "winner" , dbg(winner));
-		printBoard();
-		switch (winner) {
-			case WHITE: System.out.println("You win.\n"); break;
-			case BLACK: System.out.println("You lose.\n"); break;
-			default: System.out.println("It's a draw.\n");
-		}
-	}
-
-	private byte strategyUser(byte color) throws Exception {
-		if (log != null) log.logNode("user");
-		for (;;) {
-			System.out.print("Your move for " + (color == WHITE ? "white: " : "black: "));
-			byte column = (byte) in.nextByte() ;
-			if (isOption(column))
-				return column;
-			System.out.println("Illegal move. Try again.");
-		}
-	}
-
-	private byte strategyRandom(byte color) throws Exception {
-		if (log != null) log.logNode("random");
-		List<Byte> options = getOptions();
-		double r = Math.random();
-		byte column = options.get((int) (r * r * options.size()));
-		System.out.println("Random move for " + (color == WHITE ? "white: " : "black: ") + column);
-		return column;
-	}
-
-	private byte strategySearch(byte color) throws Exception {
-		if (log != null) log.openNode("search");
-		long result = search(color, Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
-		if (log != null) log.closeNode();
-		byte column = (byte) (result & 0xF);
-		System.out.println("Search result for " + (color == WHITE ? "white: " : "black: ") + column);
-		return column;
-	}
-
-	// Console Output
-
-	private void printBoard() {
+	public void printBoard() {
 		System.out.println("\n  0 1 2 3 4 5 6   ");
 		for (byte r = ROWS - 1; r >= 0; r--) {
 			StringBuilder line = new StringBuilder();
@@ -271,8 +193,22 @@ public class Game {
 		System.out.println("----------------- \n");
 	}
 
-	private void printValue() throws Exception {
+	public void printValue() throws Exception {
 		System.out.println("\nValue: " + value() + "\n");
+	}
+
+	// Instance variables and methods
+
+	public byte maxLevel;
+
+	public void init() {
+		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);
+		System.arraycopy(ZERO_COLUMNS, 0, top, 0, ZERO_COLUMNS.length);
+	}
+
+	public byte search(byte color) throws Exception {
+		long result = search(color, Integer.MIN_VALUE, Integer.MAX_VALUE, (byte) 1);
+		return (byte) (result & 0xF);
 	}
 
 	// Board management
@@ -285,21 +221,25 @@ public class Game {
 
 	private byte[] top = new byte[ZERO_COLUMNS.length];
 
-	private void drop(byte column, byte color) {
+	public void drop(byte column, byte color) {
 		board[index(top[column]++, column)] = color;
 	}
 
-	private void revert(byte column) {
+	public void revert(byte column) {
 		board[index(--top[column], column)] = SPACE;
 	}
 
-	private boolean isOption(byte column) {
+	public byte getTop(byte column) {
+		return column >= 0 && column < COLUMNS ? top[column] : 0;
+	}
+
+	public boolean isOption(byte column) {
 		return column >= 0 && column < COLUMNS && top[column] < ROWS;
 	}
 
 	private final byte[] COLUMN_SEQUENCE = new byte[] { 3, 2, 4, 1, 5, 0, 6 };
 
-	private List<Byte> getOptions() throws Exception {
+	public List<Byte> getOptions() throws Exception {
 		ArrayList<Byte> options = new ArrayList<>(COLUMNS);
 		for (byte i = 0; i < COLUMNS; i++) {
 			byte c = COLUMN_SEQUENCE[i];
@@ -329,28 +269,28 @@ public class Game {
 			return WHITE;
 		if (black == 4)
 			return BLACK;
-		return SPACE;
+		return RUNNING;
 	}
 
-	private byte winner(byte row, byte column) throws Exception {
+	public byte winner(byte row, byte column) throws Exception {
 		int base = index(row, column);
 		byte[][] chains = CHAIN[row * COLUMNS + column];
 		for (byte c = 0; c < chains.length; c++) {
 			byte winner = winner(base, chains[c]);
-			if (winner != SPACE)
+			if (winner != RUNNING)
 				return winner;
 		}
-		return SPACE;
+		return RUNNING;
 	}
 
-	private byte winner(byte column) throws Exception {
+	public byte winner(byte column) throws Exception {
 		byte winner = winner((byte) (top[column] - 1), column);
-		if (winner != SPACE)
+		if (winner != RUNNING)
 			return winner;
 		boolean allColumnsFull = true;
 		for (byte c = 0; c < COLUMNS; c++)
 			allColumnsFull &= top[c] >= ROWS;
-		return allColumnsFull ? FRAME : SPACE;
+		return allColumnsFull ? DRAW : RUNNING;
 	}
 
 	private int value(byte color, int base, byte[] chain) throws Exception {
@@ -455,7 +395,7 @@ public class Game {
 				if (level <= maxLevel || move >= 0x1000) { // normal search or quiescence search
 					drop(column, color);
 					byte winner = winner(column);
-					if (winner != SPACE) {
+					if (winner != RUNNING) {
 						revert(column);
 						if (log != null) log.logNode(color, level, "winVal", dbx(WINNER_VAL[winner]), "winCol", dbg(column));
 						return WINNER_VAL[winner] | column;

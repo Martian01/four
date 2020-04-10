@@ -8,7 +8,7 @@ public class Game {
 
 	// Note: we prefer 7x7 to the more common 6x7 as it offers better Zugzwang opportunities
 
-	private static final byte SPACE = 0;
+	public static final byte SPACE = 0;
 	public static final byte WHITE = 1;
 	public static final byte BLACK = 2;
 	private static final byte FRAME = 3;
@@ -143,7 +143,7 @@ public class Game {
 
 	// Instance variables and methods
 
-	public byte maxLevel = 1;
+	public byte maxLevel;
 
 	public void init() {
 		System.arraycopy(INITIAL_BOARD, 0, board, 0, INITIAL_BOARD.length);
@@ -183,7 +183,7 @@ public class Game {
 
 	private final byte[] COLUMN_SEQUENCE = new byte[] { 3, 2, 4, 1, 5, 0, 6 };
 
-	private List<Byte> getOptions() throws Exception {
+	public List<Byte> getOptions() throws Exception {
 		ArrayList<Byte> options = new ArrayList<>(COLUMNS);
 		for (byte i = 0; i < COLUMNS; i++) {
 			byte c = COLUMN_SEQUENCE[i];

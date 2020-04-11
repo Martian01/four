@@ -34,18 +34,18 @@ One good choice of an XML editor is [XML mind](https://www.xmlmind.com/xmleditor
 
 Playing the console version is already fun and has a certain old-school flair. However, playing on a mobile device is even more fun, with a better user experience and the ability to play anywhere anytime.
 
-![Light](four_light.png)
-![Dark](four_dark.png)
-
 We have added a simple Android app to this repository. You find the source code in the subdirectory `android`. You can add this directory as a new project in Android Studio, or whichever development environment you prefer. This way you can install it on your device or an emulator, modify the source code, debug it, etc.
 
-![App Logo](android/app/src/main/res/mipmap-hdpi/ic_launcher.png)
+For those just wanting to play, the app is available on [Google Play](https://play.google.com/store/apps/details?id=com.mr.four). Watch out for the app icon:
 
-For those just wanting to play, the app is available on [Google Play](https://play.google.com/store/apps/details?id=com.mr.four).
+![App Icon](android/app/src/main/res/mipmap-hdpi/ic_launcher.png)
 
 For those without access to Google Play we provide the [release build](android/app/release/app-release.apk) in this repository. Simply copy it to your device and "open" it to install it.
 
-The mobile app has a [data privacy statement](android/DataProtection.md).
+The mobile app has a [data privacy statement](android/DataProtection.md). A couple of screenshots in daylight and night mode:
+
+![Light](four_light.png)
+![Dark](four_dark.png)
 
 ### Localisation
 

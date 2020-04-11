@@ -12,27 +12,27 @@ You can create a stand-alone version in the form of a jar file. I provided a scr
 
 	java -jar four.jar
 
+and play interactively in the console:
+
+![Terminal](four_terminal.png)
+
 ## Debugging the Stand-alone Version
 
-One purpose of this project is to gain a better understanding of the underlying minimax search. Even at low game settings the hierarchical search tree gets quite big in terns of number of positions. A linear trace log would be very long and impossible to read for a human reader. Therefore a solution was needed to browse the search tree in a hierarchical way. This is now done by creating the trace log as an XML structure.
+One purpose of this project is to gain a better understanding of the underlying minimax search. Even at low game settings the hierarchical search tree gets quite big in terns of number of positions. A linear trace log would be very long and impossible to read for a human reader. Therefore the trace log is saved as an XML structure which allows you to browse the search tree in a hierarchical way.
 
 You create the XML trace log by starting the game with the command line option `debug`, for instance:
 
 	java -jar four.jar debug
 
-The game will create a log file named `debug001.xml` or similar. You can then load the file into an XML editor of your choice, and click yourself deeper into the search tree in places you want to understand better.
+The game will create a log file named `debug001.xml` or similar, in the current working directory. You can then load the file into an XML editor of your choice, and click yourself deeper into the search tree in places you want to understand better.
 
-One good choice of an XML editor is [XML mind](https://www.xmlmind.com/xmleditor/).
+One good choice of an XML editor is [XML mind](https://www.xmlmind.com/xmleditor/). A debug session might look like this:
 
-Note: the debug file will be created in the current working directory.
+![XML Debugging](xml_debug.png)
 
 ## Mobile App
 
-Playing the console version is already fun and has a certain old-school flair.
-
-![Terminal](four_terminal.png)
-
-However, playing on a mobile device is even more fun, with a better user experience and the ability to play anywhere anytime.
+Playing the console version is already fun and has a certain old-school flair. However, playing on a mobile device is even more fun, with a better user experience and the ability to play anywhere anytime.
 
 ![Light](four_light.png)
 ![Dark](four_dark.png)

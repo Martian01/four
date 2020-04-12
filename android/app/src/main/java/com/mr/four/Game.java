@@ -11,7 +11,6 @@ public class Game {
 	public static final byte SPACE = 0;
 	public static final byte WHITE = 1;
 	public static final byte BLACK = 2;
-	private static final byte FRAME = 3;
 
 	public static final byte RUNNING = 0;
 	public static final byte DRAW = 3;
@@ -21,19 +20,13 @@ public class Game {
 	}
 
 	private static final byte[] INITIAL_BOARD = new byte[] {
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, FRAME, FRAME, FRAME,
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME,
-			FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME, FRAME
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+			SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
 	};
 
 	private static final byte[] ZERO_COLUMNS = new byte[] { 0, 0, 0, 0, 0, 0, 0 };
@@ -43,20 +36,20 @@ public class Game {
 
 	// Static definitions for chains, specific to a 7x7 board
 
-	private static final byte[] UL0 = new byte[] { 0, 9, 18, 27 };
-	private static final byte[] UL1 = new byte[] { -9, 0, 9, 18 };
-	private static final byte[] UL2 = new byte[] { -18, -9, 0, 9 };
-	private static final byte[] UL3 = new byte[] { -27, -18, -9, 0 };
+	private static final byte[] UL0 = new byte[] { 0, 6, 12, 18 };
+	private static final byte[] UL1 = new byte[] { -6, 0, 6, 12 };
+	private static final byte[] UL2 = new byte[] { -12, -6, 0, 6 };
+	private static final byte[] UL3 = new byte[] { -18, -12, -6, 0 };
 
-	private static final byte[] U0 = new byte[] { 0, 10, 20, 30 };
-	private static final byte[] U1 = new byte[] { -10, 0, 10, 20 };
-	private static final byte[] U2 = new byte[] { -20, -10, 0, 10 };
-	private static final byte[] U3 = new byte[] { -30, -20, -10, 0 };
+	private static final byte[] U0 = new byte[] { 0, 7, 14, 21 };
+	private static final byte[] U1 = new byte[] { -7, 0, 7, 14 };
+	private static final byte[] U2 = new byte[] { -14, -7, 0, 7 };
+	private static final byte[] U3 = new byte[] { -21, -14, -7, 0 };
 
-	private static final byte[] UR0 = new byte[] { 0, 11, 22, 33 };
-	private static final byte[] UR1 = new byte[] { -11, 0, 11, 22 };
-	private static final byte[] UR2 = new byte[] { -22, -11, 0, 11 };
-	private static final byte[] UR3 = new byte[] { -33, -22, -11, 0 };
+	private static final byte[] UR0 = new byte[] { 0, 8, 16, 24 };
+	private static final byte[] UR1 = new byte[] { -8, 0, 8, 16 };
+	private static final byte[] UR2 = new byte[] { -16, -8, 0, 8 };
+	private static final byte[] UR3 = new byte[] { -24, -16, -8, 0 };
 
 	private static final byte[] R0 = new byte[] { 0, 1, 2, 3 };
 	private static final byte[] R1 = new byte[] { -1, 0, 1, 2 };
@@ -158,7 +151,7 @@ public class Game {
 	// Board management
 
 	private int index(byte row, byte column) {
-		return (COLUMNS + 3) * (row + 3) + column;
+		return COLUMNS * row + column;
 	}
 
 	private byte[] board = new byte[INITIAL_BOARD.length];

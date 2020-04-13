@@ -12,9 +12,7 @@ public class Log {
 	private FileOutputStream fos;
 	private BufferedOutputStream bos;
 
-	public void openFile() throws Exception {
-		if (file != null)
-			throw new Exception();
+	public void openFile() {
 		int highest = 1;
 		File dir = new File(".");
 		if (dir.exists() && dir.isDirectory()) {
@@ -33,21 +31,18 @@ public class Log {
 		openFile(String.format("debug%03d.xml", highest));
 	}
 
-	public void openFile(String fileName) throws Exception {
-		if (file != null)
-			throw new Exception();
+	public void openFile(String fileName) {
 		try {
 			file = new File(fileName);
 			fos = new FileOutputStream(file);
 			bos = new BufferedOutputStream(fos);
-		} catch(Exception e) {
+		} catch(Exception ignored) {
 			_closeFile();
-			throw e;
 		}
 		writeFile("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
 	}
 
-	public void closeFile() throws Exception {
+	public void closeFile() {
 		if (file != null) {
 			for (;;) {
 				String tos = path.peek();
@@ -59,21 +54,26 @@ public class Log {
 		}
 	}
 
-	private void _closeFile() throws Exception {
+	private void _closeFile() {
 		if (bos != null)
-			bos.close();
+			try {
+				bos.close();
+			} catch(Exception ignored) { }
 		bos = null;
 		if (fos != null)
-			fos.close();
+			try {
+				fos.close();
+			} catch(Exception ignored) { }
 		fos = null;
 		file = null;
 	}
 
-	private void writeFile(String s) throws Exception {
-		if (bos == null)
-			throw new Exception();
-		byte[] b = s.getBytes(StandardCharsets.UTF_8);
-		bos.write(b, 0, b.length);
+	private void writeFile(String s) {
+		if (bos != null)
+			try {
+				byte[] b = s.getBytes(StandardCharsets.UTF_8);
+				bos.write(b, 0, b.length);
+			} catch(Exception ignored) { }
 	}
 
 	private LinkedList<String> path = new LinkedList<>();
@@ -82,7 +82,7 @@ public class Log {
 		return new String(new char[path.size()]).replace("\0", "\t");
 	}
 
-	private void makeNode(String element, boolean closed, String... attributes) throws Exception {
+	private void makeNode(String element, boolean closed, String... attributes) {
 		if (path.contains(element))
 			for (;;) {
 				String tos = path.peek();
@@ -109,26 +109,24 @@ public class Log {
 			path.push(element);
 	}
 
-	public void openNode(String element, String... attributes) throws Exception {
+	public void openNode(String element, String... attributes) {
 		makeNode(element, false, attributes);
 	}
 
-	public void logNode(String element, String... attributes) throws Exception {
+	public void logNode(String element, String... attributes) {
 		makeNode(element, true, attributes);
 	}
 
-	public void openNode(byte color, byte level, String... attributes) throws Exception {
+	public void openNode(byte color, byte level, String... attributes) {
 		makeNode((color == 1 ? "w" : "b") + level, false, attributes);
 	}
 
-	public void logNode(byte color, byte level, String... attributes) throws Exception {
+	public void logNode(byte color, byte level, String... attributes) {
 		makeNode((color == 1 ? "w" : "b") + level, true, attributes);
 	}
 
-	public void closeNode() throws Exception {
+	public void closeNode() {
 		String element = path.pop();
-		if (element == null)
-			throw new Exception();
 		writeFile(tabs() + "</" + element + ">\n");
 	}
 

@@ -189,7 +189,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 	private void executeMove(byte column) {
 		drop(color, column, game.getTop(column));
 		game.drop(column, color);
-		gameState = winner(column);
+		gameState = game.winner(column);
 		switch (gameState) {
 			case Game.RUNNING:
 				color = Game.opposite(color);
@@ -216,32 +216,23 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 		setMessage();
 	}
 
-	private byte winner(byte column) {
-		try {
-			return game.winner(column);
-		} catch(Exception ignored) { }
-		return 5;
-	}
-
 	private ImageView[] flashing = new ImageView[49];
 	private int coordinateNumber;
 
 	public void run() {
 		coordinateNumber = 0;
-		try {
-			for (byte row = 0; row < 7; row++)
-				for (byte column = 0; column < 7; column++)
-					if (game.winner(row, column) == gameState)
-						flashing[coordinateNumber++] = images[row][column];
-			winAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-				@Override
-				public void onAnimationUpdate(ValueAnimator animator) {
-					for (int i = 0; i < coordinateNumber; i++)
-						flashing[i].setAlpha((float) animator.getAnimatedValue());
-				}
-			});
-			winAnimation.start();
-		} catch(Exception ignored) { }
+		for (byte row = 0; row < 7; row++)
+			for (byte column = 0; column < 7; column++)
+				if (game.winner(row, column) == gameState)
+					flashing[coordinateNumber++] = images[row][column];
+		winAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+			@Override
+			public void onAnimationUpdate(ValueAnimator animator) {
+				for (int i = 0; i < coordinateNumber; i++)
+					flashing[i].setAlpha((float) animator.getAnimatedValue());
+			}
+		});
+		winAnimation.start();
 	}
 
 	private void clearBoard() {
@@ -411,18 +402,16 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 	private class SearchTask extends AsyncTask<Void, Void, Byte> {
 		@Override
 		protected Byte doInBackground(Void... voids) {
-			try {
-				return game.search(computerPlayer);
-			} catch (Exception ignored) { }
-			return null;
+			return game.search(computerPlayer);
 		}
 		@Override
 		protected void onPostExecute(@Nullable Byte result) {
-			if (result == null) {
+			if (result != null && game.isOption(result))
+				executeMove(result);
+			else {
 				gameState = 5;
 				setMessage();
-			} else
-				executeMove(result);
+			}
 		}
 	}
 }

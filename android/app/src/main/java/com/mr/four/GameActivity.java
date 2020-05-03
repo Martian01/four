@@ -30,6 +30,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 	private byte gameState;
 	private byte color;
 	private byte computerPlayer;
+	private boolean playBelowAchievementLevel;
 
 	private Spinner levelSpinner;
 	private String levelTitle;
@@ -93,6 +94,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 				game.maxLevel = (byte) (position + 1);
+				playBelowAchievementLevel |= game.maxLevel < achievementLevel;
 				saveLevel();
 			}
 			@Override
@@ -201,7 +203,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 				messageView.postDelayed(this, 750);
 				if (color == computerPlayer)
 					mpLost.start();
-				else if (game.maxLevel < achievementLevel)
+				else if (playBelowAchievementLevel)
 					mpWon.start();
 				else {
 					(game.maxLevel % 2 == 0 ? mpLevelUp0 : mpLevelUp1).start();
@@ -387,6 +389,7 @@ public class GameActivity extends AppCompatActivity implements Runnable, DialogI
 		gameState = Game.RUNNING;
 		color = Game.WHITE;
 		clearBoard();
+		playBelowAchievementLevel = game.maxLevel < achievementLevel;
 		if (color == computerPlayer)
 			new SearchTask().execute();
 	}

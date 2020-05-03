@@ -53,7 +53,7 @@ We are open to including more languages into the app. Please send us a pull requ
 
 ### Shareware Attributions
 
-The app uses the following fonts and soundclips:
+The app uses the following fonts and sound clips:
 
 Resource | License Statement
 ------------ | -------------
